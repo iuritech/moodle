@@ -1,0 +1,1 @@
+<input type="button" id="botaoSubmeterFormAtribuirComponenteBloco" onclick="submeterFormAtribuirComponenteBloco();" value="Adicionar" class="btn btn-primary btn-lg">
