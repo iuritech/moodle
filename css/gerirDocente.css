@@ -1,0 +1,94 @@
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+th,
+td {
+    border: 1px solid #ccc;
+    padding: 7px;
+    text-align: center;
+    min-width: 120px;
+}
+
+select {
+    border: 2px solid #ddd;
+    background: #eee;
+    padding: 10px;
+    transition: 0.4s;
+}
+
+select:hover,
+select:focus {
+    background: #ddd;
+}
+
+.h3 {
+    background: #ddd;
+}
+
+.ocupado {
+    background: hsl(212, 35%, 33%);
+    color: #fff;
+    vertical-align: top;
+    cursor: move;
+}
+
+.disponivel {
+    background: #f9f9f9;
+    cursor: pointer;
+}
+
+.hora-coluna {
+    background: #e6e6e6;
+    font-weight: bold;
+}
+
+.panel {
+    margin-bottom: 30px;
+    width:800px;
+}
+
+.ui-draggable-dragging {
+    opacity: 0.8;
+    z-index: 9999;
+}
+
+.ui-state-hover {
+    background: #d4edff !important;
+}
+
+.disciplina-draggable {
+    background: #e6e6e6;
+    border: 1px solid #ccc;
+    margin-bottom: 8px;
+    padding: 8px;
+    cursor: move;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.disciplina-draggable:hover {
+    background: #d4edff;
+}
+.slot-impossivel { background-color: #bdbdbd !important; }
+.slot-mau { background-color: #ffcccc !important; }
+.slot-bom { background-color: #ffff99 !important; }
+.slot-otimo { background-color: #b2ffb2 !important; }
+
+<!--Estilo para mostrar doentes -->
+details {
+  width: 250px;
+}
+.dropdown-content {
+  border: 1px solid #ccc;
+  padding: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+.docentes {
+  position:relative;
+  left: 10px;
+  margin: 10px;
+}
