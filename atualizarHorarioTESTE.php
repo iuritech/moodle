@@ -36,9 +36,10 @@ try {
         }
 
         // Insere a nova aula
-        $sql = "INSERT INTO aula (id_componente, id_horario, id_turma, id_docente) VALUES (?, ?, ?, ?)";
+        /* $sql = "INSERT INTO aula (id_componente, id_horario, id_turma, id_docente) VALUES (?, ?, ?, ?)"; */
+        $sql = "UPDATE aula SET id_horario = ? WHERE id_componente=? AND id_docente=? AND id_turma=?;" ;
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiii", $id_componente, $id_horario, $id_turma, $id_docente);
+        $stmt->bind_param("iiii", $id_horario, $id_componente, $id_docente, $id_turma);
 
         if ($stmt->execute()) {
             echo "Aula atribuída com sucesso!";
@@ -47,7 +48,8 @@ try {
         }
     } elseif ($action === 'remove') {
         // Remove a aula
-        $sql = "DELETE FROM aula WHERE id_componente=? AND id_horario=? AND id_docente=? AND id_turma=?";
+        /* $sql = "DELETE FROM aula WHERE id_componente=? AND id_horario=? AND id_docente=? AND id_turma=?"; */ 
+        $sql = "UPDATE aula SET id_horario = 0 WHERE id_componente=? AND id_horario=? AND id_docente=? AND id_turma=?;";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("iiii", $id_componente, $id_horario, $id_docente, $id_turma);
 

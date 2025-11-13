@@ -81,16 +81,31 @@ foreach ($id_docentes as $id_docente) {
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN aula a ON c.id_componente = a.id_componente
-        WHERE a.id_docente = $id_docente
+        WHERE a.id_docente = $id_docente and a.id_horario =0
         GROUP BY c.id_componente, a.id_turma";
-
-
     $res = $conn->query($sql);
     $componentes = [];
     while ($row = $res->fetch_assoc())
         $componentes[] = $row;
     $componentes_por_docente[$id_docente] = $componentes;
 }
+// Obter componentes para cada docente (opcional, para lista no fundo)
+$componentes_por_docente1 = [];
+foreach ($id_docentes as $id_docente) {
+    $sql = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_turma
+        FROM componente c
+        JOIN disciplina d ON c.id_disciplina = d.id_disciplina
+        JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
+        JOIN aula a ON c.id_componente = a.id_componente
+        WHERE a.id_docente = $id_docente
+        GROUP BY c.id_componente, a.id_turma";
+    $res = $conn->query($sql);
+    $componentes = [];
+    while ($row = $res->fetch_assoc())
+        $componentes[] = $row;
+    $componentes_por_docente1[$id_docente] = $componentes;
+}
+
 /*$ocupados_por_docente = [];
 foreach ($id_docentes as $id_docente) {
     foreach ($dias_semana as $dia) {
@@ -130,6 +145,7 @@ function obterPreferenciasDocente($conn, $id_docente) {
     <link rel="stylesheet" href="css/gerirDocente.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="js/gerirHorariosDocente.js"></script>
 </head>
 
 <body>
@@ -145,12 +161,12 @@ function obterPreferenciasDocente($conn, $id_docente) {
             <details>
               <summary>Escolha os docentes</summary>
                 <div class="dropdown-content">
-                    <?php foreach ($docentes as $d): ?>
+                    <?php foreach ($docentes as $d){ ?>
                         <input type="checkbox" id="<?= $d['id_utilizador'] ?>" name="id_docente[]" value="<?= $d['id_utilizador'] ?>">
                         <label for="id_docente[]"><?= htmlspecialchars($d['nome']) ?></label><br>
-                    <?php endforeach; ?>
+                    <?php } ?>
                 </div>
-                <input type="radio" id="sem1" name="semestre" value="1">
+                <input type="radio" id="sem1" name="semestre" value="1" checked="checked">
                 <label for="sem1">Semestre 1</label><br>
                 <input type="radio" id="sem2" name="semestre" value="2">
                 <label for="sem2">Semestre 2</label><br>
@@ -161,7 +177,7 @@ function obterPreferenciasDocente($conn, $id_docente) {
 <div style="display: flex; flex-wrap: wrap;">
 <?php
 if (!empty($id_docentes)): 
-    foreach ($id_docentes as $idx => $id_docente): 
+    foreach ($id_docentes as $idx => $id_docente){
         $nome_docente = '';
 foreach ($docentes as $d) {
     if ($d['id_utilizador'] == $id_docente) {
@@ -174,16 +190,16 @@ foreach ($docentes as $d) {
         <!-- Lista lateral de disciplinas -->
         <details>
           <summary>Disciplinas</summary>
-        <div style="max-width:200px;" id="disciplinas-lista">
+        <div style="width:200px; min-height: 50px; background-color: lightgray;" id="disciplinas-lista">
             
             <?php if ($componentes_por_docente){
-            foreach ($componentes_por_docente[$id_docente] as $c): ?>
+            foreach ($componentes_por_docente[$id_docente] as $c){ ?>
                     <div class="disciplina-draggable" data-id_componente="<?= $c['id_componente'] ?>" data-id_turma="<?= $c['id_turma'] ?>">
                         <style="background:#e6e6e6; border:1px solid #ccc; margin-bottom:8px; padding:8px; cursor:move;">
                             <b><?= htmlspecialchars($c['nome_uc']) ?></b>
                             (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
                     </div>
-        <?php endforeach; } ?>
+        <?php } } ?>
         </div>
         </details>
 
@@ -195,9 +211,9 @@ foreach ($docentes as $d) {
                         <thead>
                             <tr>
                                 <th>Hora</th>
-                                <?php foreach ($dias_semana as $diaIndex => $dia): ?>
+                                <?php foreach ($dias_semana as $diaIndex => $dia){ ?>
                                     <th><?= $dia ?></th>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -208,15 +224,15 @@ foreach ($dias_semana as $dia) { //controlo preciso de quantos slots cada aula o
     $slots_linha[$dia] = array_fill(0, count($horas_unicas), 0);
 }
 
-foreach ($horas_unicas as $horaIndex => $hora): 
-    if ($horaIndex >= count($horas_unicas) - 4)
+foreach ($horas_unicas as $horaIndex => $hora){
+    if ($horaIndex >= count($horas_unicas) - 0)
         break; ?>
-                                <tr>
-                                    <td class="hora-coluna">
-                                        <?= isset($horas_map[$horaIndex]) ? $horas_map[$horaIndex] : $hora[0] . '-' . $hora[1] ?>
-                                    </td>
+    <tr>
+        <td class="hora-coluna">
+            <?= isset($horas_map[$horaIndex]) ? $horas_map[$horaIndex] : $hora[0] . '-' . $hora[1] ?>
+        </td>
 
-<?php foreach ($dias_semana as $dia): 
+<?php foreach ($dias_semana as $dia){
 if ($slots_linha[$dia][$horaIndex] > 0) {
     $slots_linha[$dia][$horaIndex]--;
     continue;
@@ -249,7 +265,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
 
 <td class="ocupado" 
     rowspan="<?= $blocos ?>"
-    data-id_componente="<?= $aula['id_componente'] ?>"
+    data-id_componente="<?= $aula['id_componente'] ?>" 
     data-id_horario="<?= $aula['id_horario'] ?>"
     data-id_turma="<?= $aula['id_turma'] ?>"
     data-id_docente="<?= $id_docente ?>"
@@ -275,165 +291,37 @@ $cores = [
 ];
 ?>
 
-                                            <td class="disponivel" 
-                                                data-id_horario="<?= $id_horario ?>" 
-                                                data-pref="<?= $pref ?>"
-                                                onclick="atribuirAula(<?= $id_docente ?>, <?= $id_horario ?>)"
-                                                style="background-color:<?= $cores[$pref] ?>;">
-                                            </td>
-                                    <?php }endforeach; ?>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <div style="margin-top:10px; margin-left:15px;">
-                        <h4>Disciplinas de <?= htmlspecialchars($nome_docente) ?></h4>
-                        <ul style="list-style-type:none; padding-left:0;">
-                            <?php foreach ($componentes_por_docente[$id_docente] ?? [] as $c): ?>
-                                <li style="margin-bottom:5px;">
-                                    <b><?= htmlspecialchars($c['nome_uc']) ?></b>
-                                    (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
+                            <td class="disponivel" 
+                                data-id_horario="<?= $id_horario ?>" 
+                                data-pref="<?= $pref ?>"
+                                onclick="atribuirAula(<?= $id_docente ?>, <?= $id_horario ?>)"
+                                style="background-color:<?= $cores[$pref] ?>;">
+                            </td>
+                    <?php }} ?>
+                </tr>
+            <?php } ?>
+        </tbody>
+    </table>
+    <div style="margin-top:10px; margin-left:15px;">
+        <h4>Disciplinas de <?= htmlspecialchars($nome_docente) ?></h4>
+        <ul style="list-style-type:none; padding-left:0;">
+            <?php foreach ($componentes_por_docente1[$id_docente] ?? [] as $c){ ?>
+                <li style="margin-bottom:5px;">
+                    <b><?= htmlspecialchars($c['nome_uc']) ?></b>
+                    (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
+                </li>
+            <?php } ?>
+        </ul>
+    </div>
 </div>
-                <?php endforeach; ?>
+
+</div>
+                <?php } ?>
             <?php endif; ?>
 </div>
-
-<!--                <div class="disciplina-draggable" data-id_componente="<?= $c['id_componente'] ?>"
-                    data-id_turma="<?= $c['id_turma'] ?>">
+<!--
+<div class="disciplina-draggable" data-id_componente="<?= $c['id_componente'] ?>" data-id_turma="<?= $c['id_turma'] ?>">
 -->
-
-<script>
-$(function() {
-    // Torna as disciplinas arrastáveis
-    $(".disciplina-draggable").draggable({
-    helper: "clone",
-        revert: "invalid",
-        cursor: "move",
-        opacity: 0.8,
-        zIndex: 9999,
-        appendTo: "body"
-});
-
-$(".ocupado").draggable({
-helper: "clone",
-    revert: "invalid",
-    cursor: "move",
-    opacity: 0.8,
-    zIndex: 9999,
-    appendTo: "body"
-});
-
-// Área para soltar (fora da tabela)
-$("#disciplinas-lista").droppable({
-accept: ".ocupado",
-    hoverClass: "ui-state-highlight",
-    drop: function(event, ui) {
-        var data = {
-        action: 'remove',
-            id_componente: ui.draggable.data("id_componente"),
-            id_horario: ui.draggable.data("id_horario"),
-            id_docente: ui.draggable.data("id_docente"),
-            id_turma: ui.draggable.data("id_turma")
-    };
-
-        if (confirm("Tem certeza que deseja remover esta aula?")) {
-            atualizarHorario(data);
-        }
-    }
-});
-
-// Torna as células disponíveis largáveis
-$(".disponivel").droppable({
-accept: ".disciplina-draggable, .ocupado",
-    hoverClass: "ui-state-hover",
-    drop: function(event, ui) {
-        var id_docente = $(this).closest('.panel').data('id_docente');
-        var id_componente = ui.draggable.data("id_componente");
-        var id_turma = ui.draggable.data("id_turma"); // já vem do HTML
-        var id_horario = $(this).data("id_horario");
-        var data= {}; 
-
-        console.log({
-        id_componente: id_componente,
-            id_turma: id_turma,
-            id_horario: id_horario,
-            id_docente: id_docente
-        });
-
-        if (!id_horario) {
-            alert("Horário inválido. Não é possível atribuir aula neste slot.");
-            return;
-        }
-        var pref = $(this).data("pref"); // valor da preferência do slot
-
-        if (pref === 0) {
-            if (!confirm("Aviso: O docente marcou este horário como IMPOSSÍVEL. Deseja continuar?")) {
-                return; // cancela a ação
-            }
-        } else if (pref === 1) {
-            if (!confirm("Aviso: O docente não gosta de ter aulas neste horário. Deseja continuar?")) {
-                return; // cancela a ação
-            }
-        }
-
-        if(ui.draggable.hasClass("disciplina-draggable")) {
-            data = {
-            action: "add",
-                id_componente: id_componente,
-                id_horario: id_horario,
-                id_docente: id_docente,
-                id_turma: id_turma
-        };
-        }
-        else if(ui.draggable.hasClass("ocupado")) {
-            data = {
-            action: "move",
-                id_componente: id_componente,
-                id_horario_antigo: ui.draggable.data("id_horario"),
-                id_horario: id_horario,
-                id_turma: id_turma,
-                id_docente: id_docente
-        };
-        }
-
-        atualizarHorario(data);
-    }
-});
-});
-
-function atualizarHorario(data) {
-    $.post("atualizarHorarioTESTE.php", data, function(response) {
-        alert(response);
-        location.reload();
-    });
-}
-
-function atribuirAula(id_docente, id_horario) {
-    if (!id_horario) {
-        alert("Hora não disponivel");
-        return;
-    }
-    var id_componente = prompt("ID do componente a atribuir?");
-    if (!id_componente) return;
-    var id_turma = prompt("ID da turma (opcional)?");
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "atualizarHorarioTESTE.php");
-    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhr.onload = function() {
-        alert(xhr.responseText);
-        location.reload();
-    };
-    xhr.send("id_componente=" + encodeURIComponent(id_componente) +
-        "&id_horario=" + encodeURIComponent(id_horario) +
-        "&id_docente=" + encodeURIComponent(id_docente) +
-        "&id_turma=" + encodeURIComponent(id_turma || ""));
-}
-</script>
 
 </body>
 
