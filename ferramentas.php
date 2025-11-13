@@ -1,5 +1,14 @@
 <?php
 
+//verifica se o utilizador esta logado
+function estaLogado(){
+	// Segurança: so permite acesso autenticado
+	if (!isset($_SESSION["sessao"])) {
+	    header("Location: index.php");
+	    exit;
+	}
+}
+
 //Gera as interfaces da página home até ao início do conteudo da página
 function gerarHome1() {
 	

@@ -4,11 +4,7 @@ include('ferramentas.php');
 include('bd.h');
 include('bd_final.php');
 
-// Segurança: so permite acesso autenticado
-if (!isset($_SESSION["sessao"])) {
-    header("Location: index.php");
-    exit;
-}
+estaLogado();
 
 // Obter docentes disponiveis
 $docentes = [];
@@ -24,8 +20,8 @@ $id_docentes = array_filter($id_docentes, 'is_numeric'); // Sao ids validos
 $semestre = isset($_GET['semestre']) ? intval($_GET['semestre']) : 1;
 
 // Obter horarios (linhas: horas, colunas: dias)
-$horas_unicas = [];
 $dias_semana = ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
+$horas_unicas = [];
 $res = $conn->query("SELECT DISTINCT hora_inicio, hora_fim FROM horario WHERE semestre=$semestre ORDER BY hora_inicio, hora_fim");
 while ($row = $res->fetch_assoc()) {
     $horas_unicas[] = [$row['hora_inicio'], $row['hora_fim']];
@@ -56,7 +52,7 @@ while ($row = $res->fetch_assoc()) {
 // Obter aulas para cada docente selecionado
 $aulas_por_docente = [];
 foreach ($id_docentes as $id_docente) {
-    $sql = "SELECT a.id_horario, a.id_componente, a.id_turma, d.nome_uc, tc.nome_tipocomponente, t.nome AS turma, h.hora_inicio, h.hora_fim, h.dia_semana
+    $sql = "SELECT a.id_horario, a.id_componente, a.id_turma, d.nome_uc, tc.nome_tipocomponente, t.nome AS turma, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
@@ -72,39 +68,31 @@ foreach ($id_docentes as $id_docente) {
     $aulas_por_docente[$id_docente] = $aulas;
 }
 
-// Obter componentes para cada docente (opcional, para lista lateral)
 $componentes_por_docente = [];
+$componentes_lista_lateral = [];
 foreach ($id_docentes as $id_docente) {
-    $sql = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_turma
+
+/* // Obter componentes para cada docente (opcional, para lista lateral) */
+ $sql = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_turma
         FROM componente c
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN aula a ON c.id_componente = a.id_componente
         WHERE a.id_docente = $id_docente and a.id_horario =0
         GROUP BY c.id_componente, a.id_turma";
-    $res = $conn->query($sql);
-    $componentes = [];
-    while ($row = $res->fetch_assoc())
-        $componentes[] = $row;
-    $componentes_por_docente[$id_docente] = $componentes;
-}
-// Obter componentes para cada docente (opcional, para lista no fundo)
-$componentes_por_docente1 = [];
-foreach ($id_docentes as $id_docente) {
-    $sql = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_turma
+    
+/* // Obter componentes para cada docente (opcional, para lista no fundo) */
+    $sql1 = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_turma
         FROM componente c
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN aula a ON c.id_componente = a.id_componente
         WHERE a.id_docente = $id_docente
         GROUP BY c.id_componente, a.id_turma";
-    $res = $conn->query($sql);
-    $componentes = [];
-    while ($row = $res->fetch_assoc())
-        $componentes[] = $row;
-    $componentes_por_docente1[$id_docente] = $componentes;
-}
 
+    $componentes_por_docente[$id_docente] = runQuery($conn,$sql1);
+    $componentes_lista_lateral[$id_docente] = runQuery($conn,$sql);
+}
 /*$ocupados_por_docente = [];
 foreach ($id_docentes as $id_docente) {
     foreach ($dias_semana as $dia) {
@@ -191,8 +179,8 @@ foreach ($docentes as $d) {
           <summary>Disciplinas</summary>
         <div style="width:200px; min-height: 50px; background-color: lightgray;" id="disciplinas-lista">
             
-            <?php if ($componentes_por_docente){
-            foreach ($componentes_por_docente[$id_docente] as $c){ ?>
+            <?php if ($componentes_lista_lateral[$id_docente]){
+            foreach ($componentes_lista_lateral[$id_docente] as $c){ ?>
                     <div class="disciplina-draggable" data-id_componente="<?= $c['id_componente'] ?>" data-id_turma="<?= $c['id_turma'] ?>">
                         <style="background:#e6e6e6; border:1px solid #ccc; margin-bottom:8px; padding:8px; cursor:move;">
                             <b><?= htmlspecialchars($c['nome_uc']) ?></b>
@@ -210,18 +198,20 @@ foreach ($docentes as $d) {
                         <thead>
                             <tr>
                                 <th>Hora</th>
-                                <?php foreach ($dias_semana as $diaIndex => $dia){ ?>
+                                <?php foreach ($dias_semana as $dia){ ?>
                                     <th><?= $dia ?></th>
                                 <?php } ?>
                             </tr>
                         </thead>
                         <tbody>
 <?php 
+
     //monitorizar os slots por linha
     $slots_linha = [];
 foreach ($dias_semana as $dia) { //controlo preciso de quantos slots cada aula ocupa
     $slots_linha[$dia] = array_fill(0, count($horas_unicas), 0);
 }
+
 
 foreach ($horas_unicas as $horaIndex => $hora){
     if ($horaIndex >= count($horas_unicas) - 0)
@@ -248,18 +238,16 @@ if ($id_horario && isset($aulas[$id_horario])) {
     $turmas = array_column($aulas[$id_horario], 'turma');
     $turmas_str = implode(', ', array_filter($turmas));
 
-    // Cálculo da duração
-    $hora_inicio = new DateTime($aula['hora_inicio']);
-    $hora_fim = new DateTime($aula['hora_fim']);
-    $duracao = $hora_inicio->diff($hora_fim);
-    $blocos = max(1, ceil($duracao->h + ($duracao->i / 60)));
 
+    // Cálculo da duração
+    $blocos = $aula['numero_horas'];
     // Marca os próximos slots como ocupados
     for ($i = 1; $i < $blocos; $i++) {
         if (($horaIndex + $i) < count($horas_unicas)) {
             $slots_linha[$dia][$horaIndex + $i] = $blocos - $i;
         }
     }
+
 ?>
 
 <td class="ocupado" 
@@ -304,7 +292,7 @@ $cores = [
     <div style="margin-top:10px; margin-left:15px;">
         <h4>Disciplinas de <?= htmlspecialchars($nome_docente) ?></h4>
         <ul style="list-style-type:none; padding-left:0;">
-            <?php foreach ($componentes_por_docente1[$id_docente] ?? [] as $c){ ?>
+            <?php foreach ($componentes_por_docente[$id_docente] ?? [] as $c){ ?>
                 <li style="margin-bottom:5px;">
                     <b><?= htmlspecialchars($c['nome_uc']) ?></b>
                     (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
@@ -321,7 +309,20 @@ $cores = [
 <!--
 <div class="disciplina-draggable" data-id_componente="<?= $c['id_componente'] ?>" data-id_turma="<?= $c['id_turma'] ?>">
 -->
-
 </body>
 
 </html>
+<?php
+function runQuery($conn, $sql) {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows === 0) {
+        return null;
+    }
+
+    // Retorna todas as linhas como array associativo
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
+?>
