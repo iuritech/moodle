@@ -12,34 +12,39 @@ if ($conn->connect_error) {
 
 // Recebe dados do AJAX
 $action = $_POST['action'] ?? '';
-$id_docente = intval($_POST['id_docente'] ?? 0);
+$id_aula = intval($_POST['id_aula'] ?? 0);
 $id_horario = intval($_POST['id_horario'] ?? 0);
-$id_componente = intval($_POST['id_componente'] ?? 0);
-$id_turma = intval($_POST['id_turma'] ?? 0);
+$id_juncao = intval($_POST['id_juncao'] ?? 0);
 
 // Validação básica
-if (!$id_docente || !$id_horario || !$id_componente) {
-    die(json_encode(['success' => false, 'message' => 'Dados em falta.']));
-}
+/* if (!$id_aula || !$id_horario) { */
+/*     die(json_encode(['success' => false, 'message' => 'Dados em falta.'])); */
+/* } */
 
 try {
     if ($action === 'add') {
-        // Verifica se já existe uma aula igual
-        $sql_check = "SELECT * FROM aula WHERE id_horario=? AND id_docente=?";
-        $stmt_check = $conn->prepare($sql_check);
-        $stmt_check->bind_param("ii", $id_horario, $id_docente);
-        $stmt_check->execute();
-        $result = $stmt_check->get_result();
 
-        if ($result->num_rows > 0) {
-            throw new Exception("Já existe uma aula neste horário para este docente.");
-        }
+        /* // Verifica se já existe uma aula igual */
+        /* $sql_check = "SELECT * FROM aula WHERE id_horario=?"; */
+        /* $stmt_check = $conn->prepare($sql_check); */
+        /* $stmt_check->bind_param("i", $id_horario); */
+        /* $stmt_check->execute(); */
+        /* $result = $stmt_check->get_result(); */
+        /* if ($result->num_rows > 0) { */
+        /*     throw new Exception("Já existe uma aula neste horário para este docente."); */
+        /* } */
 
         // Insere a nova aula
-        /* $sql = "INSERT INTO aula (id_componente, id_horario, id_turma, id_docente) VALUES (?, ?, ?, ?)"; */
-        $sql = "UPDATE aula SET id_horario = ? WHERE id_componente=? AND id_docente=? AND id_turma=?;" ;
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiii", $id_horario, $id_componente, $id_docente, $id_turma);
+        if ($id_juncao != null){
+            $sql = "UPDATE aula SET id_horario = ? WHERE id_aula=?;" ;
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ii", $id_horario, $id_aula);
+        }else {
+            $sql = "UPDATE aula SET id_horario = ? WHERE id_juncao=?;" ;
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ii", $id_horario, $id_juncao);
+        }
+        
 
         if ($stmt->execute()) {
             echo "Aula atribuída com sucesso!";
@@ -48,10 +53,9 @@ try {
         }
     } elseif ($action === 'remove') {
         // Remove a aula
-        /* $sql = "DELETE FROM aula WHERE id_componente=? AND id_horario=? AND id_docente=? AND id_turma=?"; */ 
-        $sql = "UPDATE aula SET id_horario = 0 WHERE id_componente=? AND id_horario=? AND id_docente=? AND id_turma=?;";
+        $sql = "UPDATE aula SET id_horario = 0 WHERE id_aula=?;";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iiii", $id_componente, $id_horario, $id_docente, $id_turma);
+        $stmt->bind_param("i", $id_aula);
 
         if ($stmt->execute()) {
             echo "Aula removida com sucesso!";
@@ -60,9 +64,9 @@ try {
         }
     } elseif ($_POST['action'] == 'move') {
         // Verifique se o novo horário está livre
-        $sql_check = "SELECT * FROM aula WHERE id_horario=? AND id_docente=?";
+        $sql_check = "SELECT * FROM aula WHERE id_docente=? and id_horario=?";
         $stmt = $conn->prepare($sql_check);
-        $stmt->bind_param("ii", $id_horario, $id_docente);
+        $stmt->bind_param("ii", $id_docente, $id_horario);
         $stmt->execute();
 
         if ($stmt->get_result()->num_rows > 0) {
@@ -70,9 +74,9 @@ try {
         }
 
         // Fazer troca
-        $update_sql = "UPDATE aula SET id_horario = ? WHERE id_componente = ? AND id_horario = ? AND id_docente = ? AND id_turma = ?";
+        $update_sql = "UPDATE aula SET id_horario = ? WHERE id_aula = ?";
         $stmt = $conn->prepare($update_sql);
-        $stmt->bind_param("iiiii", $id_horario, $id_componente, $_POST['id_horario_antigo'], $id_docente, $id_turma);
+        $stmt->bind_param("ii", $id_horario, $id_aula);
 
         if ($stmt->execute()) {
             echo "Aula movida com sucesso!";

@@ -52,12 +52,11 @@ while ($row = $res->fetch_assoc()) {
 // Obter aulas para cada docente selecionado
 $aulas_por_docente = [];
 foreach ($id_docentes as $id_docente) {
-    $sql = "SELECT a.id_horario, a.id_componente, a.id_turma, d.nome_uc, tc.nome_tipocomponente, t.nome AS turma, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas
+    $sql = "SELECT a.id_horario, a.id_componente, d.nome_uc, tc.nome_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
-        LEFT JOIN turma t ON a.id_turma = t.id_turma
         JOIN horario h ON a.id_horario = h.id_horario
         WHERE a.id_docente = $id_docente AND h.semestre = $semestre";
     $res = $conn->query($sql);
@@ -72,23 +71,34 @@ $componentes_por_docente = [];
 $componentes_lista_lateral = [];
 foreach ($id_docentes as $id_docente) {
 
-/* // Obter componentes para cada docente (opcional, para lista lateral) */
- $sql = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_turma
-        FROM componente c
+/* /1* // Obter componentes para cada docente (opcional, para lista lateral) *1/ */
+/*  $sql = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_aula */
+/*         FROM componente c */
+/*         JOIN disciplina d ON c.id_disciplina = d.id_disciplina */
+/*         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente */
+/*         JOIN aula a ON c.id_componente = a.id_componente */
+/*         WHERE a.id_docente = $id_docente and a.id_horario =0 */
+/*         GROUP BY c.id_componente"; */
+
+/* // Obter aulas para cada docente (opcional, para lista lateral) */
+ $sql = "SELECT a.id_aula, c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_juncao
+        FROM aula a
+        JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
-        JOIN aula a ON c.id_componente = a.id_componente
         WHERE a.id_docente = $id_docente and a.id_horario =0
-        GROUP BY c.id_componente, a.id_turma";
+        GROUP BY COALESCE(id_juncao, id_aula);
+        ";
     
 /* // Obter componentes para cada docente (opcional, para lista no fundo) */
-    $sql1 = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_turma
+    $sql1 = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_aula
+
         FROM componente c
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN aula a ON c.id_componente = a.id_componente
         WHERE a.id_docente = $id_docente
-        GROUP BY c.id_componente, a.id_turma";
+        GROUP BY c.id_componente";
 
     $componentes_por_docente[$id_docente] = runQuery($conn,$sql1);
     $componentes_lista_lateral[$id_docente] = runQuery($conn,$sql);
@@ -181,7 +191,7 @@ foreach ($docentes as $d) {
             
             <?php if ($componentes_lista_lateral[$id_docente]){
             foreach ($componentes_lista_lateral[$id_docente] as $c){ ?>
-                    <div class="disciplina-draggable" data-id_componente="<?= $c['id_componente'] ?>" data-id_turma="<?= $c['id_turma'] ?>">
+                    <div class="disciplina-draggable" data-id_aula="<?= $c['id_aula'] ?>" data-id_juncao="<?= $c['id_juncao'] ?>">
                         <style="background:#e6e6e6; border:1px solid #ccc; margin-bottom:8px; padding:8px; cursor:move;">
                             <b><?= htmlspecialchars($c['nome_uc']) ?></b>
                             (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
@@ -235,8 +245,6 @@ if ($id_horario && isset($aulas[$id_horario])) {
     $aula = $aulas[$id_horario][0];
     $nome_uc = htmlspecialchars($aula['nome_uc']);
     $nome_tipocomponente = htmlspecialchars($aula['nome_tipocomponente']);
-    $turmas = array_column($aulas[$id_horario], 'turma');
-    $turmas_str = implode(', ', array_filter($turmas));
 
 
     // Cálculo da duração
@@ -252,16 +260,12 @@ if ($id_horario && isset($aulas[$id_horario])) {
 
 <td class="ocupado" 
     rowspan="<?= $blocos ?>"
-    data-id_componente="<?= $aula['id_componente'] ?>" 
+    data-id_aula="<?= $aula['id_aula'] ?>" 
     data-id_horario="<?= $aula['id_horario'] ?>"
-    data-id_turma="<?= $aula['id_turma'] ?>"
     data-id_docente="<?= $id_docente ?>"
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
-    <?php if ($turmas_str): ?>
-        Turma: <?= $turmas_str ?>
-    <?php endif; ?>
 </td>
 
 <?php } else { 
@@ -281,7 +285,7 @@ $cores = [
                             <td class="disponivel" 
                                 data-id_horario="<?= $id_horario ?>" 
                                 data-pref="<?= $pref ?>"
-                                onclick="atribuirAula(<?= $id_docente ?>, <?= $id_horario ?>)"
+                                onclick="atribuirAula(<?= $id_aula ?>, <?= $id_horario ?>)"
                                 style="background-color:<?= $cores[$pref] ?>;">
                             </td>
                     <?php }} ?>
@@ -306,9 +310,6 @@ $cores = [
                 <?php } ?>
             <?php endif; ?>
 </div>
-<!--
-<div class="disciplina-draggable" data-id_componente="<?= $c['id_componente'] ?>" data-id_turma="<?= $c['id_turma'] ?>">
--->
 </body>
 
 </html>
