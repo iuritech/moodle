@@ -26,13 +26,12 @@ accept: ".ocupado",
         var data = {
         action: 'remove',
             id_aula: ui.draggable.data("id_aula"),
+            id_juncao: ui.draggable.data("id_juncao"),
     };
-
-        if (confirm("Tem certeza que deseja remover esta aula?")) {
             atualizarHorario(data);
-        }
     }
 });
+
 
 // Torna as células disponíveis largáveis
 $(".disponivel").droppable({
@@ -58,15 +57,15 @@ accept: ".disciplina-draggable, .ocupado",
         }
         var pref = $(this).data("pref"); // valor da preferência do slot
 
-        if (pref === 0) {
-            if (!confirm("Aviso: O docente marcou este horário como IMPOSSÍVEL. Deseja continuar?")) {
-                return; // cancela a ação
-            }
-        } else if (pref === 1) {
-            if (!confirm("Aviso: O docente não gosta de ter aulas neste horário. Deseja continuar?")) {
-                return; // cancela a ação
-            }
-        }
+        // if (pref === 0) {
+        //     if (!confirm("Aviso: O docente marcou este horário como IMPOSSÍVEL. Deseja continuar?")) {
+        //         return; // cancela a ação
+        //     }
+        // } else if (pref === 1) {
+        //     if (!confirm("Aviso: O docente não gosta de ter aulas neste horário. Deseja continuar?")) {
+        //         return; // cancela a ação
+        //     }
+        // }
 
         if(ui.draggable.hasClass("disciplina-draggable")) {
             data = {
@@ -93,26 +92,32 @@ accept: ".disciplina-draggable, .ocupado",
 
 function atualizarHorario(data) {
     $.post("atualizarHorarioTESTE.php", data, function(response) {
-         alert(response);
+        // caso dê erro decomentar este alerta para ver o erro
+         // alert(response);
         location.reload();
     });
 }
 
-function atribuirAula(id_aula, id_horario) {
-    if (!id_horario) {
-        alert("Hora não disponivel");
-        return;
+// function atribuirAula(id_aula, id_horario) {
+//     if (!id_horario) {
+//         // alert("Hora não disponivel");
+//         return;
+//     }
+//     var id_aula = prompt("ID do aula a atribuir?");
+//     if (!id_aula) return;
+//     var xhr = new XMLHttpRequest();
+//     xhr.open("POST", "atualizarHorarioTESTE.php");
+//     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+//     xhr.onload = function() {
+//         alert(xhr.responseText);
+//         location.reload();
+//     };
+//     xhr.send("&id_aula=" + encodeURIComponent(id_aula) +
+//         "&id_juncao=" + encodeURIComponent(id_juncao) +
+//         "&id_horario=" + encodeURIComponent(id_horario));
+// }
+
+function atribuir_sala(){
+    document.getElementById('caixa-salas').style.display = 'block'
     }
-    var id_aula = prompt("ID do aula a atribuir?");
-    if (!id_aula) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "atualizarHorarioTESTE.php");
-    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhr.onload = function() {
-        alert(xhr.responseText);
-        location.reload();
-    };
-    xhr.send("id_aula=" + encodeURIComponent(id_aula) +
-        "&id_horario=" + encodeURIComponent(id_horario));
-}
 

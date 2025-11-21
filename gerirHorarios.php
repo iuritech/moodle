@@ -103,6 +103,11 @@ foreach ($id_docentes as $id_docente) {
     $componentes_por_docente[$id_docente] = runQuery($conn,$sql1);
     $componentes_lista_lateral[$id_docente] = runQuery($conn,$sql);
 }
+
+$sql="select * from sala";
+$salas=runQuery($conn,$sql);
+
+
 /*$ocupados_por_docente = [];
 foreach ($id_docentes as $id_docente) {
     foreach ($dias_semana as $dia) {
@@ -263,6 +268,9 @@ if ($id_horario && isset($aulas[$id_horario])) {
     data-id_aula="<?= $aula['id_aula'] ?>" 
     data-id_horario="<?= $aula['id_horario'] ?>"
     data-id_docente="<?= $id_docente ?>"
+    data-id_juncao="<?= $aula['id_juncao'] ?>"
+    id="nova_sala"
+    onclick="atribuir_sala()"
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
@@ -285,7 +293,6 @@ $cores = [
                             <td class="disponivel" 
                                 data-id_horario="<?= $id_horario ?>" 
                                 data-pref="<?= $pref ?>"
-                                onclick="atribuirAula(<?= $id_aula ?>, <?= $id_horario ?>)"
                                 style="background-color:<?= $cores[$pref] ?>;">
                             </td>
                     <?php }} ?>
@@ -304,6 +311,22 @@ $cores = [
             <?php } ?>
         </ul>
     </div>
+
+
+
+<!--mostrar salas-->
+<form method="get" id="caixa-salas"  style="width:300px; display:none;" class="docentes">
+    <div style=" border:1px solid #ccc; padding:10px; margin-top:10px;">
+            <?php foreach ($salas as $s) { ?>
+                <input type="radio" id="<?= $s['id_sala'] ?>" name="id_sala[]" value="<?= $s['id_sala'] ?>">
+                <label for="id_sala[]"><?= htmlspecialchars($s['nome_sala']) ?></label><br>
+            <?php } ?>
+    </div>
+        <input type="submit" value="Submit">
+</form>
+
+
+
 </div>
 
 </div>

@@ -21,6 +21,22 @@ $id_juncao = intval($_POST['id_juncao'] ?? 0);
 /*     die(json_encode(['success' => false, 'message' => 'Dados em falta.'])); */
 /* } */
 
+function muda_aula($id_horario,$id_aula,$id_juncao,$conn){
+    if ($id_juncao > 0){
+            $sql = "UPDATE aula SET id_horario = ? WHERE id_juncao=?;" ;
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ii", $id_horario, $id_juncao);
+        }else {
+            $sql = "UPDATE aula SET id_horario = ? WHERE id_aula=?;" ;
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ii", $id_horario, $id_aula);
+        }
+        if ($stmt->execute()) {
+            echo "sucesso!";
+        } else {
+            echo "Erro" . $conn->error;
+        }
+}
 try {
     if ($action === 'add') {
 
@@ -35,54 +51,28 @@ try {
         /* } */
 
         // Insere a nova aula
-        if ($id_juncao != null){
-            $sql = "UPDATE aula SET id_horario = ? WHERE id_aula=?;" ;
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ii", $id_horario, $id_aula);
-        }else {
-            $sql = "UPDATE aula SET id_horario = ? WHERE id_juncao=?;" ;
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ii", $id_horario, $id_juncao);
-        }
+        muda_aula($id_horario,$id_aula,$id_juncao,$conn);
         
 
-        if ($stmt->execute()) {
-            echo "Aula atribuída com sucesso!";
-        } else {
-            echo "Erro ao atribuir aula: " . $conn->error;
-        }
+
     } elseif ($action === 'remove') {
         // Remove a aula
-        $sql = "UPDATE aula SET id_horario = 0 WHERE id_aula=?;";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $id_aula);
+        muda_aula(0,$id_aula,$id_juncao,$conn);
 
-        if ($stmt->execute()) {
-            echo "Aula removida com sucesso!";
-        } else {
-            echo "Erro ao remover aula: " . $conn->error;
-        }
     } elseif ($_POST['action'] == 'move') {
-        // Verifique se o novo horário está livre
-        $sql_check = "SELECT * FROM aula WHERE id_docente=? and id_horario=?";
-        $stmt = $conn->prepare($sql_check);
-        $stmt->bind_param("ii", $id_docente, $id_horario);
-        $stmt->execute();
-
-        if ($stmt->get_result()->num_rows > 0) {
-            throw new Exception("Já existe uma aula neste horário para este docente.");
-        }
+        
+        /* // Verifique se o novo horário está livre */
+        /* $sql_check = "SELECT * FROM aula WHERE id_docente=? and id_horario=?"; */
+        /* $stmt = $conn->prepare($sql_check); */
+        /* $stmt->bind_param("ii", $id_docente, $id_horario); */
+        /* $stmt->execute(); */
+        /* if ($stmt->get_result()->num_rows > 0) { */
+        /*     throw new Exception("Já existe uma aula neste horário para este docente."); */
+        /* } */
 
         // Fazer troca
-        $update_sql = "UPDATE aula SET id_horario = ? WHERE id_aula = ?";
-        $stmt = $conn->prepare($update_sql);
-        $stmt->bind_param("ii", $id_horario, $id_aula);
-
-        if ($stmt->execute()) {
-            echo "Aula movida com sucesso!";
-        } else {
-            echo "Erro ao mover aula: " . $conn->error;
-        }
+        muda_aula($id_horario,$id_aula,$id_juncao,$conn);
+        
     } else {
         throw new Exception("Ação inválida.");
     }
