@@ -67,6 +67,7 @@ foreach ($id_docentes as $id_docente) {
     $aulas_por_docente[$id_docente] = $aulas;
 }
 
+
 $componentes_por_docente = [];
 $componentes_lista_lateral = [];
 foreach ($id_docentes as $id_docente) {
@@ -104,8 +105,6 @@ foreach ($id_docentes as $id_docente) {
     $componentes_lista_lateral[$id_docente] = runQuery($conn,$sql);
 }
 
-$sql="select * from sala";
-$salas=runQuery($conn,$sql);
 
 
 /*$ocupados_por_docente = [];
@@ -261,6 +260,20 @@ if ($id_horario && isset($aulas[$id_horario])) {
         }
     }
 
+$idAula=$aula['id_aula'];
+$sql="
+select a.id_aula, sc.id_sala, s.sigla_sala
+from aula a
+join sala_componente_disponivel sc on sc.id_componente = a.id_componente
+join sala s on sc.id_sala = s.id_sala
+where a.id_aula = $idAula";
+$salas=runQuery($conn,$sql);
+$salas_str="[";
+if($salas)
+foreach ($salas as $s){
+    $salas_str=$salas_str."'".$s['sigla_sala']."', ";
+}
+$salas_str=$salas_str."]";
 ?>
 
 <td class="ocupado" 
@@ -269,8 +282,8 @@ if ($id_horario && isset($aulas[$id_horario])) {
     data-id_horario="<?= $aula['id_horario'] ?>"
     data-id_docente="<?= $id_docente ?>"
     data-id_juncao="<?= $aula['id_juncao'] ?>"
-    id="nova_sala"
-    onclick="atribuir_sala()"
+    data-salas="<?= $salas_str ?>"
+    onclick="atribuir_sala(<?= $idAula.",". $salas_str ?>)"
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
@@ -315,16 +328,13 @@ $cores = [
 
 
 <!--mostrar salas-->
-<form method="get" id="caixa-salas"  style="width:300px; display:none;" class="docentes">
-    <div style=" border:1px solid #ccc; padding:10px; margin-top:10px;">
-            <?php foreach ($salas as $s) { ?>
-                <input type="radio" id="<?= $s['id_sala'] ?>" name="id_sala[]" value="<?= $s['id_sala'] ?>">
-                <label for="id_sala[]"><?= htmlspecialchars($s['nome_sala']) ?></label><br>
-            <?php } ?>
+<div id="caixa_salas" style="display:none;" >
+<form method="get" style="width:300px; " class="docentes">
+    <div id="conteudo_salas" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
     </div>
         <input type="submit" value="Submit">
 </form>
-
+</div>
 
 
 </div>

@@ -117,7 +117,26 @@ function atualizarHorario(data) {
 //         "&id_horario=" + encodeURIComponent(id_horario));
 // }
 
-function atribuir_sala(){
-    document.getElementById('caixa-salas').style.display = 'block'
+let text = "";
+function atribuir_sala(id_aula,salas){
+    document.getElementById('caixa_salas').style.display = 'block';
+    console.log(salas);
+    console.log(id_aula);
+    text = "";
+    salas.forEach(myFunction);
+    document.getElementById('conteudo_salas').innerHTML = text;
+    if (salas==""){
+        document.getElementById('caixa_salas').style.display = 'none';
     }
+}
+
+function myFunction(item, index) {
+    text+= " <input type='radio' id=['"+item+"'] name='id_sala' value=['"+item+"']> <label for='id_sala'>"+item+"</label><br> ";
+    // text += index + ": " + item + "<br>";
+    // console.log(item);
+
+
+}
+
+
 
