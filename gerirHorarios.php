@@ -6,6 +6,30 @@ include('bd_final.php');
 
 estaLogado();
 
+//atribuir sala
+if (isset($_POST['id_aula']) &&  isset($_POST['id_sala'])){
+    $aula = $_POST['id_aula'];
+    $sala = $_POST['id_sala'];
+    $sql="select id_sala from sala where sigla_sala='$sala'";
+    $id_sala=runQuery($conn,$sql)[0]['id_sala'];
+    $sql="select id_juncao from aula where id_aula='$aula'";
+    $juncao=runQuery($conn,$sql)[0]['id_juncao'];
+    if ($juncao){
+        $sql = "UPDATE aula SET id_sala = ? WHERE id_juncao=?;" ;
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ii", $id_sala, $juncao);
+    }else {
+        $sql = "UPDATE aula SET id_sala = ? WHERE id_aula=?;" ;
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ii", $id_sala, $aula);
+    }
+    if ($stmt->execute()) {
+        header("Location: gerirHorarios.php");
+    } else {
+        echo "Erro" . $conn->error;
+    }
+}
+
 // Obter docentes disponiveis
 $docentes = [];
 $res = $conn->query("SELECT id_utilizador, nome FROM utilizador WHERE id_funcao IN (4,5,6) ORDER BY nome");
@@ -52,12 +76,13 @@ while ($row = $res->fetch_assoc()) {
 // Obter aulas para cada docente selecionado
 $aulas_por_docente = [];
 foreach ($id_docentes as $id_docente) {
-    $sql = "SELECT a.id_horario, a.id_componente, d.nome_uc, tc.nome_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao
+    $sql = "SELECT a.id_horario, a.id_componente, d.nome_uc, tc.nome_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, s.sigla_sala
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN horario h ON a.id_horario = h.id_horario
+        join sala s on s.id_sala = a.id_sala
         WHERE a.id_docente = $id_docente AND h.semestre = $semestre";
     $res = $conn->query($sql);
     $aulas = [];
@@ -177,7 +202,7 @@ function obterPreferenciasDocente($conn, $id_docente) {
 
 <!--mostrar salas-->
 <div id="caixa_salas" style="display:none;" >
-<form method="get" style="width:300px; " class="docentes">
+<form method="post" style="width:300px; " class="docentes">
     <div id="conteudo_salas" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
     </div>
         <input type="submit" value="Submit">
@@ -258,6 +283,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
     $aula = $aulas[$id_horario][0];
     $nome_uc = htmlspecialchars($aula['nome_uc']);
     $nome_tipocomponente = htmlspecialchars($aula['nome_tipocomponente']);
+    $sala = htmlspecialchars($aula['sigla_sala']);
 
 
     // Cálculo da duração
@@ -271,14 +297,19 @@ if ($id_horario && isset($aulas[$id_horario])) {
 
 $idAula=$aula['id_aula'];
 $sql="
-select a.id_aula, sc.id_sala, s.sigla_sala
+select s.sigla_sala
 from aula a
 join sala_componente_disponivel sc on sc.id_componente = a.id_componente
 join sala s on sc.id_sala = s.id_sala
 where a.id_aula = $idAula";
 $salas=runQuery($conn,$sql);
+if(!$salas){
+    $sql="
+    select s.id_sala, s.sigla_sala
+    from sala s";
+    $salas=runQuery($conn,$sql);
+}
 $salas_str="[";
-if($salas)
 foreach ($salas as $s){
     $salas_str=$salas_str."'".$s['sigla_sala']."', ";
 }
@@ -296,6 +327,7 @@ $salas_str=$salas_str."]";
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
+    <?= $sala ?><br>
 </td>
 
 <?php } else { 

@@ -131,7 +131,7 @@ function atribuir_sala(id_aula,salas){
 }
 
 function myFunction(item, index) {
-    text+= " <input type=radio id="+item+" name=id_sala value="+item+"> <label for=id_sala>"+item+"</label><br> ";
+    text+= " <input type=radio id='"+item+"' name=id_sala value='"+item+"'> <label for=id_sala>"+item+"</label><br> ";
 
 
 }
