@@ -175,6 +175,15 @@ function obterPreferenciasDocente($conn, $id_docente) {
             </details>
         </form>
 
+<!--mostrar salas-->
+<div id="caixa_salas" style="display:none;" >
+<form method="get" style="width:300px; " class="docentes">
+    <div id="conteudo_salas" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
+    </div>
+        <input type="submit" value="Submit">
+</form>
+</div>
+
 <div style="display: flex; flex-wrap: wrap;">
 <?php
 if (!empty($id_docentes)): 
@@ -327,14 +336,7 @@ $cores = [
 
 
 
-<!--mostrar salas-->
-<div id="caixa_salas" style="display:none;" >
-<form method="get" style="width:300px; " class="docentes">
-    <div id="conteudo_salas" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
-    </div>
-        <input type="submit" value="Submit">
-</form>
-</div>
+
 
 
 </div>

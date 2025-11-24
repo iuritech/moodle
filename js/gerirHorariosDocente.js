@@ -122,7 +122,7 @@ function atribuir_sala(id_aula,salas){
     document.getElementById('caixa_salas').style.display = 'block';
     console.log(salas);
     console.log(id_aula);
-    text = "";
+    text = "<input type=hidden name=id_aula value="+id_aula+">";
     salas.forEach(myFunction);
     document.getElementById('conteudo_salas').innerHTML = text;
     if (salas==""){
@@ -131,9 +131,7 @@ function atribuir_sala(id_aula,salas){
 }
 
 function myFunction(item, index) {
-    text+= " <input type='radio' id=['"+item+"'] name='id_sala' value=['"+item+"']> <label for='id_sala'>"+item+"</label><br> ";
-    // text += index + ": " + item + "<br>";
-    // console.log(item);
+    text+= " <input type=radio id="+item+" name=id_sala value="+item+"> <label for=id_sala>"+item+"</label><br> ";
 
 
 }
