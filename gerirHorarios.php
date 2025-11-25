@@ -6,6 +6,47 @@ include('bd_final.php');
 
 estaLogado();
 
+function runQuery($conn, $sql) {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows === 0) {
+        return null;
+    }
+    // Retorna todas as linhas como array associativo
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
+
+//pesquisar salas definidas para uma determinada componente
+function salas_componente($conn,$idAula){
+         $sql="
+        select s.sigla_sala
+        from aula a
+        join sala_componente_disponivel sc on sc.id_componente = a.id_componente
+        join sala s on sc.id_sala = s.id_sala
+        where a.id_aula = $idAula";
+        $salas=runQuery($conn,$sql);
+        if(!$salas){
+            $sql="
+            select s.id_sala, s.sigla_sala
+            from sala s";
+            $salas=runQuery($conn,$sql);
+        }
+        $salas_str="[";
+        foreach ($salas as $s){
+            $salas_str=$salas_str."'".$s['sigla_sala']."', ";
+        }
+        return $salas_str=$salas_str."]";
+        
+    }
+
+    #procura a sigla_sala da aula
+    function sala_aula($conn,$id_sala){
+        $sql="select sigla_sala from sala where id_sala='$id_sala'";
+        $sigla_sala=runQuery($conn,$sql)[0]['sigla_sala'];
+        return htmlspecialchars($sigla_sala);
+    }
+
 //atribuir sala
 if (isset($_POST['id_aula']) &&  isset($_POST['id_sala'])){
     $aula = $_POST['id_aula'];
@@ -24,7 +65,9 @@ if (isset($_POST['id_aula']) &&  isset($_POST['id_sala'])){
         $stmt->bind_param("ii", $id_sala, $aula);
     }
     if ($stmt->execute()) {
-        header("Location: gerirHorarios.php");
+        $url = basename($_SERVER['PHP_SELF']) . '?' . http_build_query($_GET);
+        header("Location: ".$url);
+        
     } else {
         echo "Erro" . $conn->error;
     }
@@ -67,6 +110,14 @@ $horas_map = [
 
 ];
 
+//cor baseada na preferência
+$cores = [
+    0 => '#bdbdbd', // Impossível
+    1 => '#ffcccc', // Mau
+    2 => '#ffff99', // Bom
+    3 => '#b2ffb2'  // Ótimo
+];
+
 // Obter todos os horÃ¡rios para cruzamento rapido
 $res = $conn->query("SELECT * FROM horario WHERE semestre=$semestre");
 while ($row = $res->fetch_assoc()) {
@@ -76,13 +127,12 @@ while ($row = $res->fetch_assoc()) {
 // Obter aulas para cada docente selecionado
 $aulas_por_docente = [];
 foreach ($id_docentes as $id_docente) {
-    $sql = "SELECT a.id_horario, a.id_componente, d.nome_uc, tc.nome_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, s.sigla_sala
+    $sql = "SELECT a.id_horario, a.id_componente, d.abreviacao_uc, tc.nome_tipocomponente, tc.sigla_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, a.id_sala
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN horario h ON a.id_horario = h.id_horario
-        join sala s on s.id_sala = a.id_sala
         WHERE a.id_docente = $id_docente AND h.semestre = $semestre";
     $res = $conn->query($sql);
     $aulas = [];
@@ -93,18 +143,9 @@ foreach ($id_docentes as $id_docente) {
 }
 
 
-$componentes_por_docente = [];
 $componentes_lista_lateral = [];
 foreach ($id_docentes as $id_docente) {
 
-/* /1* // Obter componentes para cada docente (opcional, para lista lateral) *1/ */
-/*  $sql = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_aula */
-/*         FROM componente c */
-/*         JOIN disciplina d ON c.id_disciplina = d.id_disciplina */
-/*         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente */
-/*         JOIN aula a ON c.id_componente = a.id_componente */
-/*         WHERE a.id_docente = $id_docente and a.id_horario =0 */
-/*         GROUP BY c.id_componente"; */
 
 /* // Obter aulas para cada docente (opcional, para lista lateral) */
  $sql = "SELECT a.id_aula, c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_juncao
@@ -116,28 +157,8 @@ foreach ($id_docentes as $id_docente) {
         GROUP BY COALESCE(id_juncao, id_aula);
         ";
     
-/* // Obter componentes para cada docente (opcional, para lista no fundo) */
-    $sql1 = "SELECT c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_aula
-
-        FROM componente c
-        JOIN disciplina d ON c.id_disciplina = d.id_disciplina
-        JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
-        JOIN aula a ON c.id_componente = a.id_componente
-        WHERE a.id_docente = $id_docente
-        GROUP BY c.id_componente";
-
-    $componentes_por_docente[$id_docente] = runQuery($conn,$sql1);
     $componentes_lista_lateral[$id_docente] = runQuery($conn,$sql);
 }
-
-
-
-/*$ocupados_por_docente = [];
-foreach ($id_docentes as $id_docente) {
-    foreach ($dias_semana as $dia) {
-        $ocupados_por_docente[$id_docente][$dia] = [];
-    }
-}*/
 
 function obterPreferenciasDocente($conn, $id_docente) {
     $preferencia="";
@@ -175,6 +196,7 @@ function obterPreferenciasDocente($conn, $id_docente) {
 </head>
 
 <body>
+
     <div class="card shadow mb-4">
         <div class="card-body">
             <a href="http://localhost/home.php">
@@ -200,16 +222,17 @@ function obterPreferenciasDocente($conn, $id_docente) {
             </details>
         </form>
 
-<!--mostrar salas-->
-<div id="caixa_salas" style="display:none;" >
-<form method="post" style="width:300px; " class="docentes">
-    <div id="conteudo_salas" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
-    </div>
-        <input type="submit" value="Submit">
-</form>
-</div>
+        <!--mostrar salas-->
+        <div id="caixa_salas" style="display:none;" >
+            <form method="post" style="width:300px; " class="docentes">
+                  <summary>Escolha a sala</summary>
+                <div id="conteudo_salas" class="dropdown-content" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
+                </div>
+                    <input type="submit" value="Submit">
+            </form>
+        </div>
 
-<div style="display: flex; flex-wrap: wrap;">
+    <div style="display: flex; flex-wrap: wrap;">
 <?php
 if (!empty($id_docentes)): 
     foreach ($id_docentes as $idx => $id_docente){
@@ -281,9 +304,18 @@ $aulas = $aulas_por_docente[$id_docente] ?? [];
 
 if ($id_horario && isset($aulas[$id_horario])) {
     $aula = $aulas[$id_horario][0];
-    $nome_uc = htmlspecialchars($aula['nome_uc']);
-    $nome_tipocomponente = htmlspecialchars($aula['nome_tipocomponente']);
-    $sala = htmlspecialchars($aula['sigla_sala']);
+    $nome_uc = htmlspecialchars($aula['abreviacao_uc']);
+    $nome_tipocomponente = htmlspecialchars($aula['sigla_tipocomponente']);
+    $idAula=$aula['id_aula'];
+    $id_sala=$aula['id_sala'];
+    $sala="";
+    $salas_aula=salas_componente($conn,$idAula);
+    #se a aula ja tiver uma sala definida pesquisa e atribui á variavel $sala
+
+    #procura a sigla_sala da aula
+    if($id_sala)
+        $sigla_sala=sala_aula($conn,$id_sala);
+    
 
 
     // Cálculo da duração
@@ -295,25 +327,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
         }
     }
 
-$idAula=$aula['id_aula'];
-$sql="
-select s.sigla_sala
-from aula a
-join sala_componente_disponivel sc on sc.id_componente = a.id_componente
-join sala s on sc.id_sala = s.id_sala
-where a.id_aula = $idAula";
-$salas=runQuery($conn,$sql);
-if(!$salas){
-    $sql="
-    select s.id_sala, s.sigla_sala
-    from sala s";
-    $salas=runQuery($conn,$sql);
-}
-$salas_str="[";
-foreach ($salas as $s){
-    $salas_str=$salas_str."'".$s['sigla_sala']."', ";
-}
-$salas_str=$salas_str."]";
+    
 ?>
 
 <td class="ocupado" 
@@ -323,25 +337,20 @@ $salas_str=$salas_str."]";
     data-id_docente="<?= $id_docente ?>"
     data-id_juncao="<?= $aula['id_juncao'] ?>"
     data-salas="<?= $salas_str ?>"
-    onclick="atribuir_sala(<?= $idAula.",". $salas_str ?>)"
+    onclick="atribuir_sala(<?= $idAula.",". $salas_aula ?>)"
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
-    <?= $sala ?><br>
+    <?= $sigla_sala ?><br>
 </td>
 
 <?php } else { 
+
 //slots disponiveis
 $preferencias = obterPreferenciasDocente($conn, $id_docente);
 $idx = $horaIndex * count($dias_semana) + array_search($dia, $dias_semana);
 $pref = $preferencias[$idx] ?? 0;
-//cor baseada na preferência
-$cores = [
-    0 => '#bdbdbd', // Impossível
-    1 => '#ffcccc', // Mau
-    2 => '#ffff99', // Bom
-    3 => '#b2ffb2'  // Ótimo
-];
+
 ?>
 
                             <td class="disponivel" 
@@ -354,22 +363,6 @@ $cores = [
             <?php } ?>
         </tbody>
     </table>
-    <div style="margin-top:10px; margin-left:15px;">
-        <h4>Disciplinas de <?= htmlspecialchars($nome_docente) ?></h4>
-        <ul style="list-style-type:none; padding-left:0;">
-            <?php foreach ($componentes_por_docente[$id_docente] ?? [] as $c){ ?>
-                <li style="margin-bottom:5px;">
-                    <b><?= htmlspecialchars($c['nome_uc']) ?></b>
-                    (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
-                </li>
-            <?php } ?>
-        </ul>
-    </div>
-
-
-
-
-
 
 </div>
 
@@ -380,17 +373,3 @@ $cores = [
 </body>
 
 </html>
-<?php
-function runQuery($conn, $sql) {
-    $stmt = $conn->prepare($sql);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows === 0) {
-        return null;
-    }
-
-    // Retorna todas as linhas como array associativo
-    return $result->fetch_all(MYSQLI_ASSOC);
-}
-?>
