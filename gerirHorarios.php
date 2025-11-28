@@ -47,14 +47,18 @@ function salas_componente($conn,$idAula){
         return htmlspecialchars($sigla_sala);
     }
 
-function obterPreferenciasDocente($conn, $id_docente) {
+
+// preferencia_sala id_sala
+// preferencias_turma id_turma
+// utilizador_preferencia id_utilizador
+function getPref($conn, $id, $tabela, $atributo) {
     $preferencia="";
     $query = "SELECT p.preferencia
-        FROM utilizador_preferencia e
+        FROM $tabela e
         JOIN preferencias p ON e.id_preferencias = p.id_preferencias
-        WHERE e.id_utilizador = ?";
+        WHERE e.$atributo = ?";
     if ($stmt = $conn->prepare($query)) {
-        $stmt->bind_param("i", $id_docente);
+        $stmt->bind_param("i", $id);
         $stmt->execute();
         $stmt->bind_result($preferencia);
         if ($stmt->fetch()) {
@@ -247,13 +251,14 @@ if (!empty($id_docentes))
         $sql="select nome from utilizador where id_utilizador='$id_docente'";
         $nome_docente=runQuery($conn,$sql)[0]['nome'];
         $aulas = get_aulas($conn,'id_docente', $id_docente) ?? [];
+        $preferencias = getPref($conn, $id_docente,"utilizador_preferencia","id_utilizador" );
 ?>
     <div style="display:flex;">
         <!-- O terceiro elemento = id_docente ou id_turma -->
         <?= imprime_lista_lateral($conn,$id_docente,"id_docente"); ?>
                 <div class="panel" data-id_docente="<?= $id_docente ?>">
                     <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_docente) ?></h3>
-        <?= imprime_horario($conn,$aulas,$id_docente); ?>
+        <?= imprime_horario($conn,$aulas,$id_docente,$preferencias); ?>
                 </div>
     </div>
                 <?php } ?>
@@ -265,13 +270,14 @@ if (!empty($id_turmas))
         $sql="select nome from turma where id_turma='$id_turma'";
         $nome_turma=runQuery($conn,$sql)[0]['nome'];
         $aulas = get_aulas($conn,'id_turma', $id_turma) ?? [];
+        $preferencias = getPref($conn, $id_turma,"preferencias_turma","id_turma" );
 ?>
         <div style="display:flex;">
             <!-- O terceiro elemento = id_docente ou id_turma -->
             <?= imprime_lista_lateral($conn,$id_turma,"id_turma"); ?>
                     <div class="panel" data-id_turma="<?= $id_turma ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_turma) ?></h3>
-            <?= imprime_horario($conn,$aulas,$id_turma); ?>
+            <?= imprime_horario($conn,$aulas,$id_turma,$preferencias); ?>
                     </div>
         </div>
 <?php } ?>
@@ -283,27 +289,22 @@ if (!empty($id_salas))
         $sql="select nome_sala from sala where id_sala='$id_sala'";
         $nome_sala=runQuery($conn,$sql)[0]['nome_sala'];
         $aulas = get_aulas($conn,'id_sala', $id_sala) ?? [];
+        $preferencias = getPref($conn, $id_sala,"preferencia_sala","id_sala" );
 ?>
         <div style="display:flex;">
                     <div class="panel" data-id_sala="<?= $id_sala ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_sala) ?></h3>
-            <?= imprime_horario($conn,$aulas,$id_sala); ?>
+            <?= imprime_horario($conn,$aulas,$id_sala,$preferencias); ?>
                     </div>
         </div>
 <?php } ?>
 
-<!--
-<?php
-    $aulas = get_aulas($conn,'id_turma', 2) ?? [];
-    imprime_horario($conn,$aulas,2); 
-?>
--->
 </div>
 </body>
 
 </html>
 <?php
-        function imprime_horario($conn,$aulas,$id){
+        function imprime_horario($conn,$aulas,$id,$preferencias){
 
 // Inicializar array de horarios mapeados
 $horario_map = [];
@@ -425,7 +426,6 @@ if ($id_horario && isset($aulas[$id_horario])) {
 <?php } else { 
 
 //slots disponiveis
-$preferencias = obterPreferenciasDocente($conn, $id);
 $idx = $horaIndex * count($dias_semana) + array_search($dia, $dias_semana);
 $pref = $preferencias[$idx] ?? 0;
 
