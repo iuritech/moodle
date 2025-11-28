@@ -47,6 +47,52 @@ function salas_componente($conn,$idAula){
         return htmlspecialchars($sigla_sala);
     }
 
+function obterPreferenciasDocente($conn, $id_docente) {
+    $preferencia="";
+    $query = "SELECT p.preferencia
+        FROM utilizador_preferencia e
+        JOIN preferencias p ON e.id_preferencias = p.id_preferencias
+        WHERE e.id_utilizador = ?";
+    if ($stmt = $conn->prepare($query)) {
+        $stmt->bind_param("i", $id_docente);
+        $stmt->execute();
+        $stmt->bind_result($preferencia);
+        if ($stmt->fetch()) {
+            $stmt->close();
+            return explode(',', $preferencia);
+        }
+        $stmt->close();
+    }
+    // Se não houver preferências, devolve array de 50 zeros
+    return array_fill(0, 50, 0);
+}
+
+/* Lista lateral de disciplinas */
+function imprime_lista_lateral($conn,$id,$atributo){
+ $sql = "SELECT a.id_aula, c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_juncao
+        FROM aula a
+        JOIN componente c ON a.id_componente = c.id_componente
+        JOIN disciplina d ON c.id_disciplina = d.id_disciplina
+        JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
+        WHERE a.$atributo = $id and a.id_horario =0
+        GROUP BY COALESCE(id_juncao, id_aula);
+";?>
+        <details>
+          <summary>Disciplinas</summary>
+        <div style="width:200px; min-height: 50px; background-color: lightgray;" id="disciplinas-lista">
+            <?php
+            if ($componentes_lista = runQuery($conn,$sql))
+                foreach ($componentes_lista as $c){ ?>
+                    <div class="disciplina-draggable" data-id_aula="<?= $c['id_aula'] ?>" data-id_juncao="<?= $c['id_juncao'] ?>">
+                        <style="background:#e6e6e6; border:1px solid #ccc; margin-bottom:8px; padding:8px; cursor:move;">
+                            <b><?= htmlspecialchars($c['nome_uc']) ?></b>
+                            (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
+                    </div>
+        <?php }  ?>
+        </div>
+        </details>
+<?php }
+
 //atribuir sala
 if (isset($_POST['id_aula']) &&  isset($_POST['id_sala'])){
     $aula = $_POST['id_aula'];
@@ -86,98 +132,22 @@ $id_docentes = array_filter($id_docentes, 'is_numeric'); // Sao ids validos
 // Obter semestre (opcional)
 $semestre = isset($_GET['semestre']) ? intval($_GET['semestre']) : 1;
 
-// Obter horarios (linhas: horas, colunas: dias)
-$dias_semana = ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
-$horas_unicas = [];
-$res = $conn->query("SELECT DISTINCT hora_inicio, hora_fim FROM horario WHERE semestre=$semestre ORDER BY hora_inicio, hora_fim");
-while ($row = $res->fetch_assoc()) {
-    $horas_unicas[] = [$row['hora_inicio'], $row['hora_fim']];
-}
-
-// Inicializar array de horarios mapeados
-$horario_map = [];
-$horas_map = [
-    '08:30-09:30',
-    '09:30-10:30',
-    '10:30-11:30',
-    '11:30-12:30',
-    '12:30-13:30',
-    '13:30-14:30',
-    '14:30-15:30',
-    '15:30-16:30',
-    '16:30-17:30',
-    '17:30-18:30'
-
-];
-
-//cor baseada na preferência
-$cores = [
-    0 => '#bdbdbd', // Impossível
-    1 => '#ffcccc', // Mau
-    2 => '#ffff99', // Bom
-    3 => '#b2ffb2'  // Ótimo
-];
-
-// Obter todos os horÃ¡rios para cruzamento rapido
-$res = $conn->query("SELECT * FROM horario WHERE semestre=$semestre");
-while ($row = $res->fetch_assoc()) {
-    $horario_map[$row['dia_semana']][$row['hora_inicio'] . '-' . $row['hora_fim']] = $row['id_horario'];
-}
-
-// Obter aulas para cada docente selecionado
-$aulas_por_docente = [];
-foreach ($id_docentes as $id_docente) {
-    $sql = "SELECT a.id_horario, a.id_componente, d.abreviacao_uc, tc.nome_tipocomponente, tc.sigla_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, a.id_sala
+// Obter aulas 
+function get_aulas($conn,$atributo,$id){
+    $sql = "SELECT a.id_horario, a.id_componente, d.abreviacao_uc, tc.sigla_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, a.id_sala, a.id_docente
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN horario h ON a.id_horario = h.id_horario
-        WHERE a.id_docente = $id_docente AND h.semestre = $semestre";
+        WHERE a.$atributo = $id";
     $res = $conn->query($sql);
     $aulas = [];
     while ($row = $res->fetch_assoc()) {
         $aulas[$row['id_horario']][] = $row;
     }
-    $aulas_por_docente[$id_docente] = $aulas;
-}
-
-
-$componentes_lista_lateral = [];
-foreach ($id_docentes as $id_docente) {
-
-
-/* // Obter aulas para cada docente (opcional, para lista lateral) */
- $sql = "SELECT a.id_aula, c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_juncao
-        FROM aula a
-        JOIN componente c ON a.id_componente = c.id_componente
-        JOIN disciplina d ON c.id_disciplina = d.id_disciplina
-        JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
-        WHERE a.id_docente = $id_docente and a.id_horario =0
-        GROUP BY COALESCE(id_juncao, id_aula);
-        ";
-    
-    $componentes_lista_lateral[$id_docente] = runQuery($conn,$sql);
-}
-
-function obterPreferenciasDocente($conn, $id_docente) {
-    $preferencia="";
-    $query = "SELECT p.preferencia
-        FROM utilizador_preferencia e
-        JOIN preferencias p ON e.id_preferencias = p.id_preferencias
-        WHERE e.id_utilizador = ?";
-    if ($stmt = $conn->prepare($query)) {
-        $stmt->bind_param("i", $id_docente);
-        $stmt->execute();
-        $stmt->bind_result($preferencia);
-        if ($stmt->fetch()) {
-            $stmt->close();
-            return explode(',', $preferencia);
-        }
-        $stmt->close();
-    }
-    // Se não houver preferências, devolve array de 50 zeros
-    return array_fill(0, 50, 0);
+    return $aulas;
+    /* $aulas_por_docente[$id_docente] = $aulas; */
 }
 
 ?>
@@ -234,37 +204,79 @@ function obterPreferenciasDocente($conn, $id_docente) {
 
     <div style="display: flex; flex-wrap: wrap;">
 <?php
-if (!empty($id_docentes)): 
+if (!empty($id_docentes))
     foreach ($id_docentes as $idx => $id_docente){
-        $nome_docente = '';
-foreach ($docentes as $d) {
-    if ($d['id_utilizador'] == $id_docente) {
-        $nome_docente = $d['nome'];
-        break;
-    }
-}
+        #pesquisa o nome do docente
+        $sql="select nome from utilizador where id_utilizador='$id_docente'";
+        $nome_docente=runQuery($conn,$sql)[0]['nome'];
+        $aulas = get_aulas($conn,'id_docente', $id_docente) ?? [];
 ?>
     <div style="display:flex;">
-        <!-- Lista lateral de disciplinas -->
-        <details>
-          <summary>Disciplinas</summary>
-        <div style="width:200px; min-height: 50px; background-color: lightgray;" id="disciplinas-lista">
-            
-            <?php if ($componentes_lista_lateral[$id_docente]){
-            foreach ($componentes_lista_lateral[$id_docente] as $c){ ?>
-                    <div class="disciplina-draggable" data-id_aula="<?= $c['id_aula'] ?>" data-id_juncao="<?= $c['id_juncao'] ?>">
-                        <style="background:#e6e6e6; border:1px solid #ccc; margin-bottom:8px; padding:8px; cursor:move;">
-                            <b><?= htmlspecialchars($c['nome_uc']) ?></b>
-                            (<?= htmlspecialchars($c['nome_tipocomponente']) ?>)
-                    </div>
-        <?php } } ?>
-        </div>
-        </details>
+        <!-- O terceiro elemento = id_docente ou id_turma -->
+        <?= imprime_lista_lateral($conn,$id_docente,"id_docente"); ?>
+
+
 
                 <div class="panel" data-id_docente="<?= $id_docente ?>">
 
                     <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_docente) ?></h3>
+        <?= imprime_horario($conn,$aulas,$id_docente); ?>
 
+                </div>
+    </div>
+                <?php } ?>
+<?php
+        $aulas = get_aulas($conn,'id_turma', 2) ?? [];
+        imprime_horario($conn,$aulas,2); 
+        $aulas = get_aulas($conn,'id_turma', 1) ?? [];
+        imprime_horario($conn,$aulas,1); 
+?>
+</div>
+</body>
+
+</html>
+<?php
+        function imprime_horario($conn,$aulas,$id){
+
+// Inicializar array de horarios mapeados
+$horario_map = [];
+$horas_map = [
+    '08:30-09:30',
+    '09:30-10:30',
+    '10:30-11:30',
+    '11:30-12:30',
+    '12:30-13:30',
+    '13:30-14:30',
+    '14:30-15:30',
+    '15:30-16:30',
+    '16:30-17:30',
+    '17:30-18:30'
+
+];
+
+// Obter todos os horÃ¡rios para cruzamento rapido
+$res = $conn->query("SELECT * FROM horario");
+while ($row = $res->fetch_assoc()) {
+    $horario_map[$row['dia_semana']][$row['hora_inicio'] . '-' . $row['hora_fim']] = $row['id_horario'];
+}
+
+//cor baseada na preferência
+$cores = [
+    0 => '#bdbdbd', // Impossível
+    1 => '#ffcccc', // Mau
+    2 => '#ffff99', // Bom
+    3 => '#b2ffb2'  // Ótimo
+];
+
+// Obter horarios (linhas: horas, colunas: dias)
+$dias_semana = ['SEG', 'TER', 'QUA', 'QUI', 'SEX'];
+$horas_unicas = [];
+$res = $conn->query("SELECT DISTINCT hora_inicio, hora_fim FROM horario ORDER BY hora_inicio, hora_fim");
+while ($row = $res->fetch_assoc()) {
+    $horas_unicas[] = [$row['hora_inicio'], $row['hora_fim']];
+}
+
+?>
                     <table>
                         <thead>
                             <tr>
@@ -285,8 +297,7 @@ foreach ($dias_semana as $dia) { //controlo preciso de quantos slots cada aula o
 
 
 foreach ($horas_unicas as $horaIndex => $hora){
-    if ($horaIndex >= count($horas_unicas) - 0)
-        break; ?>
+?>
     <tr>
         <td class="hora-coluna">
             <?= isset($horas_map[$horaIndex]) ? $horas_map[$horaIndex] : $hora[0] . '-' . $hora[1] ?>
@@ -300,7 +311,6 @@ if ($slots_linha[$dia][$horaIndex] > 0) {
 
 $chave_horario = $hora[0] . '-' . $hora[1];
 $id_horario = $horario_map[$dia][$chave_horario] ?? null;
-$aulas = $aulas_por_docente[$id_docente] ?? [];
 
 if ($id_horario && isset($aulas[$id_horario])) {
     $aula = $aulas[$id_horario][0];
@@ -308,11 +318,12 @@ if ($id_horario && isset($aulas[$id_horario])) {
     $nome_tipocomponente = htmlspecialchars($aula['sigla_tipocomponente']);
     $idAula=$aula['id_aula'];
     $id_sala=$aula['id_sala'];
-    $sala="";
+    $id_docente=$aula['id_docente'];
     $salas_aula=salas_componente($conn,$idAula);
     #se a aula ja tiver uma sala definida pesquisa e atribui á variavel $sala
 
     #procura a sigla_sala da aula
+    $sigla_sala="";
     if($id_sala)
         $sigla_sala=sala_aula($conn,$id_sala);
     
@@ -336,7 +347,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
     data-id_horario="<?= $aula['id_horario'] ?>"
     data-id_docente="<?= $id_docente ?>"
     data-id_juncao="<?= $aula['id_juncao'] ?>"
-    data-salas="<?= $salas_str ?>"
+    data-salas="<?= $salas_aula ?>"
     onclick="atribuir_sala(<?= $idAula.",". $salas_aula ?>)"
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
@@ -347,7 +358,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
 <?php } else { 
 
 //slots disponiveis
-$preferencias = obterPreferenciasDocente($conn, $id_docente);
+$preferencias = obterPreferenciasDocente($conn, $id);
 $idx = $horaIndex * count($dias_semana) + array_search($dia, $dias_semana);
 $pref = $preferencias[$idx] ?? 0;
 
@@ -363,13 +374,5 @@ $pref = $preferencias[$idx] ?? 0;
             <?php } ?>
         </tbody>
     </table>
+<?php } ?>
 
-</div>
-
-</div>
-                <?php } ?>
-            <?php endif; ?>
-</div>
-</body>
-
-</html>
