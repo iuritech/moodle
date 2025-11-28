@@ -129,6 +129,14 @@ while ($row = $res->fetch_assoc())
 $id_docentes = isset($_GET['id_docente']) ? (is_array($_GET['id_docente']) ? $_GET['id_docente'] : [$_GET['id_docente']]) : [];
 $id_docentes = array_filter($id_docentes, 'is_numeric'); // Sao ids validos
 
+// Obter turmas selecionadas (pode ser array)
+$id_turmas = isset($_GET['id_turma']) ? (is_array($_GET['id_turma']) ? $_GET['id_turma'] : [$_GET['id_turma']]) : [];
+$id_turmas = array_filter($id_turmas, 'is_numeric'); // Sao ids validos
+
+// Obter salas selecionadas (pode ser array)
+$id_salas = isset($_GET['id_sala']) ? (is_array($_GET['id_sala']) ? $_GET['id_sala'] : [$_GET['id_sala']]) : [];
+$id_salas = array_filter($id_salas, 'is_numeric'); // Sao ids validos
+
 // Obter semestre (opcional)
 $semestre = isset($_GET['semestre']) ? intval($_GET['semestre']) : 1;
 
@@ -175,22 +183,49 @@ function get_aulas($conn,$atributo,$id){
             <h3 style="margin-left:15px; margin-top:20px; margin-bottom: 25px;"><b>Gerir Horarios</b></h3>
         </div>
 
-        <form method="get" style="width:300px" class="docentes">
-            <details>
-              <summary>Escolha os docentes</summary>
-                <div class="dropdown-content">
+
+    <form method="get" class="docentes">
+        <details>
+        <summary>Escolha docentes / turmas / salas</summary>
+            <div style="display: flex; flex-wrap: wrap;">
+                <div style"display:flex" class="dropdown-content">
                     <?php foreach ($docentes as $d){ ?>
                         <input type="checkbox" id="<?= $d['id_utilizador'] ?>" name="id_docente[]" value="<?= $d['id_utilizador'] ?>">
                         <label for="id_docente[]"><?= htmlspecialchars($d['nome']) ?></label><br>
                     <?php } ?>
                 </div>
-                <input type="radio" id="sem1" name="semestre" value="1" checked="checked">
-                <label for="sem1">Semestre 1</label><br>
-                <input type="radio" id="sem2" name="semestre" value="2">
-                <label for="sem2">Semestre 2</label><br>
-                <input type="submit" value="Submit">
-            </details>
-        </form>
+
+            <?php
+                $sql = "select * from turma";
+                $turmas = runQuery($conn,$sql);
+            ?>
+                <div style"display:flex" class="dropdown-content">
+                    <?php foreach ($turmas as $d){ ?>
+                        <input type="checkbox" id="<?= $d['id_turma'] ?>" name="id_turma[]" value="<?= $d['id_turma'] ?>">
+                        <label for="id_turma[]"><?= htmlspecialchars($d['nome']) ?></label><br>
+                    <?php } ?>
+                </div>
+
+            <?php
+                $sql = "select * from sala";
+                $salas = runQuery($conn,$sql);
+            ?>
+                <div style"display:flex" class="dropdown-content">
+                    <?php foreach ($salas as $d){ ?>
+                        <input type="checkbox" id="<?= $d['id_sala'] ?>" name="id_sala[]" value="<?= $d['id_sala'] ?>">
+                        <label for="id_sala[]"><?= htmlspecialchars($d['nome_sala']) ?></label><br>
+                    <?php } ?>
+                </div>
+
+            </div>
+        </details>
+        <input type="radio" id="sem1" name="semestre" value="1" checked="checked">
+        <label for="sem1">Semestre 1</label><br>
+        <input type="radio" id="sem2" name="semestre" value="2">
+        <label for="sem2">Semestre 2</label><br>
+        <input type="submit" value="Submit">
+
+    </form>
 
         <!--mostrar salas-->
         <div id="caixa_salas" style="display:none;" >
@@ -202,7 +237,9 @@ function get_aulas($conn,$atributo,$id){
             </form>
         </div>
 
+
     <div style="display: flex; flex-wrap: wrap;">
+
 <?php
 if (!empty($id_docentes))
     foreach ($id_docentes as $idx => $id_docente){
@@ -214,23 +251,53 @@ if (!empty($id_docentes))
     <div style="display:flex;">
         <!-- O terceiro elemento = id_docente ou id_turma -->
         <?= imprime_lista_lateral($conn,$id_docente,"id_docente"); ?>
-
-
-
                 <div class="panel" data-id_docente="<?= $id_docente ?>">
-
                     <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_docente) ?></h3>
         <?= imprime_horario($conn,$aulas,$id_docente); ?>
-
                 </div>
     </div>
                 <?php } ?>
+
 <?php
-        $aulas = get_aulas($conn,'id_turma', 2) ?? [];
-        imprime_horario($conn,$aulas,2); 
-        $aulas = get_aulas($conn,'id_turma', 1) ?? [];
-        imprime_horario($conn,$aulas,1); 
+if (!empty($id_turmas))
+    foreach ($id_turmas as $idx => $id_turma){
+        #pesquisa o nome da turma
+        $sql="select nome from turma where id_turma='$id_turma'";
+        $nome_turma=runQuery($conn,$sql)[0]['nome'];
+        $aulas = get_aulas($conn,'id_turma', $id_turma) ?? [];
 ?>
+        <div style="display:flex;">
+            <!-- O terceiro elemento = id_docente ou id_turma -->
+            <?= imprime_lista_lateral($conn,$id_turma,"id_turma"); ?>
+                    <div class="panel" data-id_turma="<?= $id_turma ?>">
+                        <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_turma) ?></h3>
+            <?= imprime_horario($conn,$aulas,$id_turma); ?>
+                    </div>
+        </div>
+<?php } ?>
+                
+<?php
+if (!empty($id_salas))
+    foreach ($id_salas as $idx => $id_sala){
+        #pesquisa o nome da turma
+        $sql="select nome_sala from sala where id_sala='$id_sala'";
+        $nome_sala=runQuery($conn,$sql)[0]['nome_sala'];
+        $aulas = get_aulas($conn,'id_sala', $id_sala) ?? [];
+?>
+        <div style="display:flex;">
+                    <div class="panel" data-id_sala="<?= $id_sala ?>">
+                        <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_sala) ?></h3>
+            <?= imprime_horario($conn,$aulas,$id_sala); ?>
+                    </div>
+        </div>
+<?php } ?>
+
+<!--
+<?php
+    $aulas = get_aulas($conn,'id_turma', 2) ?? [];
+    imprime_horario($conn,$aulas,2); 
+?>
+-->
 </div>
 </body>
 
