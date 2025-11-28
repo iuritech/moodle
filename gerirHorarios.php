@@ -6,6 +6,7 @@ include('bd_final.php');
 
 estaLogado();
 
+// função para correr qualquer instrução sql evita repetição de código
 function runQuery($conn, $sql) {
     $stmt = $conn->prepare($sql);
     $stmt->execute();
@@ -26,6 +27,7 @@ function salas_componente($conn,$idAula){
         join sala s on sc.id_sala = s.id_sala
         where a.id_aula = $idAula";
         $salas=runQuery($conn,$sql);
+        // se uma componente nao tiver salas atribuidas mostra as salas todas
         if(!$salas){
             $sql="
             select s.id_sala, s.sigla_sala
@@ -40,7 +42,7 @@ function salas_componente($conn,$idAula){
         
     }
 
-    #procura a sigla_sala da aula
+    #procura a sigla_sala para a aula destinada
     function sala_aula($conn,$id_sala){
         $sql="select sigla_sala from sala where id_sala='$id_sala'";
         $sigla_sala=runQuery($conn,$sql)[0]['sigla_sala'];
@@ -48,6 +50,7 @@ function salas_componente($conn,$idAula){
     }
 
 
+// procurar preferencias
 // preferencia_sala id_sala
 // preferencias_turma id_turma
 // utilizador_preferencia id_utilizador
@@ -97,7 +100,7 @@ function imprime_lista_lateral($conn,$id,$atributo){
         </details>
 <?php }
 
-//atribuir sala
+//atribuir sala a uma determinada aula
 if (isset($_POST['id_aula']) &&  isset($_POST['id_sala'])){
     $aula = $_POST['id_aula'];
     $sala = $_POST['id_sala'];
@@ -124,10 +127,15 @@ if (isset($_POST['id_aula']) &&  isset($_POST['id_sala'])){
 }
 
 // Obter docentes disponiveis
-$docentes = [];
-$res = $conn->query("SELECT id_utilizador, nome FROM utilizador WHERE id_funcao IN (4,5,6) ORDER BY nome");
-while ($row = $res->fetch_assoc())
-    $docentes[] = $row;
+$sql = "SELECT * FROM utilizador WHERE id_funcao IN (4,5,6) ORDER BY nome";
+$docentes = runQuery($conn,$sql);
+// Obter turmas disponiveis
+$sql = "select * from turma";
+$turmas = runQuery($conn,$sql);
+
+// Obter salas disponiveis
+$sql = "select * from sala";
+$salas = runQuery($conn,$sql);
 
 // Obter docentes selecionados (pode ser array)
 $id_docentes = isset($_GET['id_docente']) ? (is_array($_GET['id_docente']) ? $_GET['id_docente'] : [$_GET['id_docente']]) : [];
@@ -159,7 +167,6 @@ function get_aulas($conn,$atributo,$id){
         $aulas[$row['id_horario']][] = $row;
     }
     return $aulas;
-    /* $aulas_por_docente[$id_docente] = $aulas; */
 }
 
 ?>
@@ -199,10 +206,6 @@ function get_aulas($conn,$atributo,$id){
                     <?php } ?>
                 </div>
 
-            <?php
-                $sql = "select * from turma";
-                $turmas = runQuery($conn,$sql);
-            ?>
                 <div style"display:flex" class="dropdown-content">
                     <?php foreach ($turmas as $d){ ?>
                         <input type="checkbox" id="<?= $d['id_turma'] ?>" name="id_turma[]" value="<?= $d['id_turma'] ?>">
@@ -210,10 +213,6 @@ function get_aulas($conn,$atributo,$id){
                     <?php } ?>
                 </div>
 
-            <?php
-                $sql = "select * from sala";
-                $salas = runQuery($conn,$sql);
-            ?>
                 <div style"display:flex" class="dropdown-content">
                     <?php foreach ($salas as $d){ ?>
                         <input type="checkbox" id="<?= $d['id_sala'] ?>" name="id_sala[]" value="<?= $d['id_sala'] ?>">
@@ -222,13 +221,12 @@ function get_aulas($conn,$atributo,$id){
                 </div>
 
             </div>
+            <input type="radio" id="sem1" name="semestre" value="1" checked="checked">
+            <label for="sem1">Semestre 1</label><br>
+            <input type="radio" id="sem2" name="semestre" value="2">
+            <label for="sem2">Semestre 2</label><br>
+            <input type="submit" value="Submit">
         </details>
-        <input type="radio" id="sem1" name="semestre" value="1" checked="checked">
-        <label for="sem1">Semestre 1</label><br>
-        <input type="radio" id="sem2" name="semestre" value="2">
-        <label for="sem2">Semestre 2</label><br>
-        <input type="submit" value="Submit">
-
     </form>
 
         <!--mostrar salas-->
@@ -254,11 +252,10 @@ if (!empty($id_docentes))
         $preferencias = getPref($conn, $id_docente,"utilizador_preferencia","id_utilizador" );
 ?>
     <div style="display:flex;">
-        <!-- O terceiro elemento = id_docente ou id_turma -->
         <?= imprime_lista_lateral($conn,$id_docente,"id_docente"); ?>
                 <div class="panel" data-id_docente="<?= $id_docente ?>">
                     <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_docente) ?></h3>
-        <?= imprime_horario($conn,$aulas,$id_docente,$preferencias); ?>
+        <?= imprime_horario($conn,$aulas,$preferencias); ?>
                 </div>
     </div>
                 <?php } ?>
@@ -273,11 +270,10 @@ if (!empty($id_turmas))
         $preferencias = getPref($conn, $id_turma,"preferencias_turma","id_turma" );
 ?>
         <div style="display:flex;">
-            <!-- O terceiro elemento = id_docente ou id_turma -->
             <?= imprime_lista_lateral($conn,$id_turma,"id_turma"); ?>
                     <div class="panel" data-id_turma="<?= $id_turma ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_turma) ?></h3>
-            <?= imprime_horario($conn,$aulas,$id_turma,$preferencias); ?>
+            <?= imprime_horario($conn,$aulas,$preferencias); ?>
                     </div>
         </div>
 <?php } ?>
@@ -294,7 +290,7 @@ if (!empty($id_salas))
         <div style="display:flex;">
                     <div class="panel" data-id_sala="<?= $id_sala ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_sala) ?></h3>
-            <?= imprime_horario($conn,$aulas,$id_sala,$preferencias); ?>
+            <?= imprime_horario($conn,$aulas,$preferencias); ?>
                     </div>
         </div>
 <?php } ?>
@@ -304,7 +300,7 @@ if (!empty($id_salas))
 
 </html>
 <?php
-        function imprime_horario($conn,$aulas,$id,$preferencias){
+        function imprime_horario($conn,$aulas,$preferencias){
 
 // Inicializar array de horarios mapeados
 $horario_map = [];
