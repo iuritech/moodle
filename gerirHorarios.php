@@ -154,12 +154,13 @@ $semestre = isset($_GET['semestre']) ? intval($_GET['semestre']) : 1;
 
 // Obter aulas 
 function get_aulas($conn,$atributo,$id){
-    $sql = "SELECT a.id_horario, a.id_componente, d.abreviacao_uc, tc.sigla_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, a.id_sala, a.id_docente
+    $sql = "SELECT a.id_horario, a.id_componente, d.abreviacao_uc, tc.sigla_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, a.id_sala, a.id_docente, t.nome
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN horario h ON a.id_horario = h.id_horario
+        join turma t on a.id_turma=t.id_turma
         WHERE a.$atributo = $id";
     $res = $conn->query($sql);
     $aulas = [];
@@ -300,7 +301,31 @@ if (!empty($id_salas))
 
 </html>
 <?php
-        function imprime_horario($conn,$aulas,$preferencias){
+
+function set_turma($aulas){
+    $juncao = $aulas[0]['id_juncao'];
+    if ($juncao > 0){
+        foreach ($aulas as $a){
+            $nomes_turmas[] = $a['nome'];
+        }
+        return implode(",", $nomes_turmas);
+    }else
+    return $aulas[0]['nome'];
+}
+function set_nomeuc($aulas){
+    $juncao = $aulas[0]['id_juncao'];
+    if ($juncao > 0){
+        foreach ($aulas as $a){
+            $nomes_ucs[] = $a['abreviacao_uc'];
+        }
+        $nomes = array_values(array_unique($nomes_ucs));
+        return implode(",", $nomes);
+    }else
+    return $aulas[0]['abreviacao_uc'];
+}
+
+function imprime_horario($conn,$aulas,$preferencias){
+
 
 // Inicializar array de horarios mapeados
 $horario_map = [];
@@ -378,7 +403,8 @@ $id_horario = $horario_map[$dia][$chave_horario] ?? null;
 
 if ($id_horario && isset($aulas[$id_horario])) {
     $aula = $aulas[$id_horario][0];
-    $nome_uc = htmlspecialchars($aula['abreviacao_uc']);
+    $nome_uc = set_nomeuc($aulas[$id_horario]);
+    $turma = set_turma($aulas[$id_horario]);
     $nome_tipocomponente = htmlspecialchars($aula['sigla_tipocomponente']);
     $idAula=$aula['id_aula'];
     $id_sala=$aula['id_sala'];
@@ -416,6 +442,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
+    <?= $turma ?><br>
     <?= $sigla_sala ?><br>
 </td>
 
