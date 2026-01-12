@@ -4,6 +4,7 @@ include('ferramentas.php');
 include('bd.h');
 include('bd_final.php');
 
+
 estaLogado();
 
 // função para correr qualquer instrução sql evita repetição de código
@@ -16,6 +17,24 @@ function runQuery($conn, $sql) {
     }
     // Retorna todas as linhas como array associativo
     return $result->fetch_all(MYSQLI_ASSOC);
+}
+
+# Atributo deve ser id_sala ou id_docente
+function sobrepostos($conn,$atributo){
+    $sql="select $atributo,count(id_horario) as sobrepostos from (select * from aula group by coalesce(id_juncao,id_aula))as tabela where $atributo is not null group by $atributo,id_horario having count(id_horario)>1;";
+    return runQuery($conn,$sql);
+}
+function falhas($conn){
+$salaSobreposta=sobrepostos($conn,"id_sala");
+$profSobreposto=sobrepostos($conn,"id_docente");
+
+
+if ($salaSobreposta) 
+    foreach ($salaSobreposta as $s)
+        echo get_sigla($conn,$s["id_sala"])."<br>";
+if ($profSobreposto)
+    foreach ($profSobreposto as $s)
+        echo get_docente($conn, $s["id_docente"])."<br>";
 }
 
 //pesquisar salas definidas para uma determinada componente
@@ -43,10 +62,15 @@ function salas_componente($conn,$idAula){
     }
 
     #procura a sigla_sala para a aula destinada
-    function sala_aula($conn,$id_sala){
+    function get_sigla($conn,$id_sala){
         $sql="select sigla_sala from sala where id_sala='$id_sala'";
         $sigla_sala=runQuery($conn,$sql)[0]['sigla_sala'];
         return htmlspecialchars($sigla_sala);
+    }
+    function get_docente($conn, $id_docente){
+        $sql="select nome from utilizador where id_utilizador = $id_docente ";
+        $nome_docente=runQuery($conn,$sql)[0]['nome'];
+        return htmlspecialchars($nome_docente);
     }
 
 
@@ -74,6 +98,14 @@ function getPref($conn, $id, $tabela, $atributo) {
     return array_fill(0, 50, 0);
 }
 
+# verifica os docentes/turmas/salas que estao selecionadas
+function selecionado($id, $id_gets){
+    foreach ($id_gets as $ids)
+        if ($id == $ids)
+            return true;
+    return false; 
+}
+
 /* Lista lateral de disciplinas */
 function imprime_lista_lateral($conn,$id,$atributo){
  $sql = "SELECT a.id_aula, c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_juncao
@@ -85,7 +117,7 @@ function imprime_lista_lateral($conn,$id,$atributo){
         GROUP BY COALESCE(id_juncao, id_aula);
 ";?>
         <details>
-          <summary>Disciplinas</summary>
+          <summary>UCs</summary>
         <div style="width:200px; min-height: 50px; background-color: lightgray;" id="disciplinas-lista">
             <?php
             if ($componentes_lista = runQuery($conn,$sql))
@@ -195,41 +227,9 @@ function get_aulas($conn,$atributo,$id){
             <h3 style="margin-left:15px; margin-top:20px; margin-bottom: 25px;"><b>Gerir Horarios</b></h3>
         </div>
 
-
-    <form method="get" class="docentes">
-        <details>
-        <summary>Escolha docentes / turmas / salas</summary>
-            <div style="display: flex; flex-wrap: wrap;">
-                <div style"display:flex" class="dropdown-content">
-                    <?php foreach ($docentes as $d){ ?>
-                        <input type="checkbox" id="<?= $d['id_utilizador'] ?>" name="id_docente[]" value="<?= $d['id_utilizador'] ?>">
-                        <label for="id_docente[]"><?= htmlspecialchars($d['nome']) ?></label><br>
-                    <?php } ?>
-                </div>
-
-                <div style"display:flex" class="dropdown-content">
-                    <?php foreach ($turmas as $d){ ?>
-                        <input type="checkbox" id="<?= $d['id_turma'] ?>" name="id_turma[]" value="<?= $d['id_turma'] ?>">
-                        <label for="id_turma[]"><?= htmlspecialchars($d['nome']) ?></label><br>
-                    <?php } ?>
-                </div>
-
-                <div style"display:flex" class="dropdown-content">
-                    <?php foreach ($salas as $d){ ?>
-                        <input type="checkbox" id="<?= $d['id_sala'] ?>" name="id_sala[]" value="<?= $d['id_sala'] ?>">
-                        <label for="id_sala[]"><?= htmlspecialchars($d['nome_sala']) ?></label><br>
-                    <?php } ?>
-                </div>
-
-            </div>
-            <input type="radio" id="sem1" name="semestre" value="1" checked="checked">
-            <label for="sem1">Semestre 1</label><br>
-            <input type="radio" id="sem2" name="semestre" value="2">
-            <label for="sem2">Semestre 2</label><br>
-            <input type="submit" value="Submit">
-        </details>
-    </form>
-
+<?php
+falhas($conn);
+?>
         <!--mostrar salas-->
         <div id="caixa_salas" style="display:none;" >
             <form method="post" style="width:300px; " class="docentes">
@@ -241,7 +241,7 @@ function get_aulas($conn,$atributo,$id){
         </div>
 
 
-    <div style="display: flex; flex-wrap: wrap;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: center;">
 
 <?php
 if (!empty($id_docentes))
@@ -252,11 +252,11 @@ if (!empty($id_docentes))
         $aulas = get_aulas($conn,'id_docente', $id_docente) ?? [];
         $preferencias = getPref($conn, $id_docente,"utilizador_preferencia","id_utilizador" );
 ?>
-    <div style="display:flex;">
-        <?= imprime_lista_lateral($conn,$id_docente,"id_docente"); ?>
+    <div class="caixas" style="display:flex;">
                 <div class="panel" data-id_docente="<?= $id_docente ?>">
                     <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_docente) ?></h3>
         <?= imprime_horario($conn,$aulas,$preferencias); ?>
+        <?= imprime_lista_lateral($conn,$id_docente,"id_docente"); ?>
                 </div>
     </div>
                 <?php } ?>
@@ -270,11 +270,11 @@ if (!empty($id_turmas))
         $aulas = get_aulas($conn,'id_turma', $id_turma) ?? [];
         $preferencias = getPref($conn, $id_turma,"preferencias_turma","id_turma" );
 ?>
-        <div style="display:flex;">
-            <?= imprime_lista_lateral($conn,$id_turma,"id_turma"); ?>
+        <div class="caixas" style="display:flex;">
                     <div class="panel" data-id_turma="<?= $id_turma ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_turma) ?></h3>
             <?= imprime_horario($conn,$aulas,$preferencias); ?>
+            <?= imprime_lista_lateral($conn,$id_turma,"id_turma"); ?>
                     </div>
         </div>
 <?php } ?>
@@ -288,13 +288,49 @@ if (!empty($id_salas))
         $aulas = get_aulas($conn,'id_sala', $id_sala) ?? [];
         $preferencias = getPref($conn, $id_sala,"preferencia_sala","id_sala" );
 ?>
-        <div style="display:flex;">
+        <div class="caixas" style="display:flex;">
                     <div class="panel" data-id_sala="<?= $id_sala ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_sala) ?></h3>
             <?= imprime_horario($conn,$aulas,$preferencias); ?>
                     </div>
         </div>
 <?php } ?>
+
+<div class="caixas" style="display:flex;">
+    <form method="get" class="docentes">
+        <details>
+        <summary>Adicionar tabela</summary>
+            <div style="display: flex; flex-wrap: wrap;">
+                <div style"display:flex" class="dropdown-content">
+                    <?php foreach ($docentes as $d){ ?>
+                        <input type="checkbox" id="<?= $d['id_utilizador'] ?>" name="id_docente[]" value="<?= $d['id_utilizador'] ?>"
+                        <?php if (selecionado($d['id_utilizador'],$id_docentes))echo 'checked="checked"' ?> >
+                        <label for="id_docente[]"><?= htmlspecialchars($d['nome']) ?></label><br>
+                    <?php  } ?>
+                </div>
+                <div style"display:flex" class="dropdown-content">
+                    <?php foreach ($turmas as $d){ ?>
+                        <input type="checkbox" id="<?= $d['id_turma'] ?>" name="id_turma[]" value="<?= $d['id_turma'] ?>"
+                        <?php if (selecionado($d['id_turma'],$id_turmas))echo 'checked="checked"' ?> >
+                        <label for="id_turma[]"><?= htmlspecialchars($d['nome']) ?></label><br>
+                    <?php } ?>
+                </div>
+                <div style"display:flex" class="dropdown-content">
+                    <?php foreach ($salas as $d){ ?>
+                        <input type="checkbox" id="<?= $d['id_sala'] ?>" name="id_sala[]" value="<?= $d['id_sala'] ?>"
+                        <?php if (selecionado($d['id_sala'],$id_salas))echo 'checked="checked"' ?> >
+                        <label for="id_sala[]"><?= htmlspecialchars($d['nome_sala']) ?></label><br>
+                    <?php } ?>
+                </div>
+            </div>
+            <input type="radio" id="sem1" name="semestre" value="1" checked="checked">
+            <label for="sem1">Semestre 1</label><br>
+            <input type="radio" id="sem2" name="semestre" value="2">
+            <label for="sem2">Semestre 2</label><br>
+            <input type="submit" value="Submit">
+        </details>
+    </form>
+</div>
 
 </div>
 </body>
@@ -415,7 +451,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
     #procura a sigla_sala da aula
     $sigla_sala="";
     if($id_sala)
-        $sigla_sala=sala_aula($conn,$id_sala);
+        $sigla_sala=get_sigla($conn,$id_sala);
     
 
 

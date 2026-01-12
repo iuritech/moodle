@@ -46,7 +46,6 @@ select:focus {
 }
 
 .panel {
-    margin-bottom: 30px;
     width:800px;
 }
 
@@ -88,7 +87,18 @@ details {
   overflow-y: auto;
 }
 .docentes {
-  position:relative;
-  left: 10px;
-  margin: 10px;
+  align-items: center;     /* vertical */
+  background-color:gray;
+  display: flex;
+  justify-content: center; /* horizontal */
+  padding: 2%;
+  border-radius:25px;
+}
+
+.caixas{
+  align-items:center;
+  margin:20px;
+  min-width:800px;
+  min-height: 600px;
+  justify-content: center;
 }
