@@ -31,6 +31,7 @@ select:focus {
 .ocupado {
     background: hsl(212, 35%, 33%);
     color: #fff;
+
     vertical-align: top;
     cursor: move;
 }

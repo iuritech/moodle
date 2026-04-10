@@ -3,6 +3,7 @@ session_start();
 include('ferramentas.php');
 include('bd.h');
 include('bd_final.php');
+include('falhas.php');
 
 
 estaLogado();
@@ -17,24 +18,6 @@ function runQuery($conn, $sql) {
     }
     // Retorna todas as linhas como array associativo
     return $result->fetch_all(MYSQLI_ASSOC);
-}
-
-# Atributo deve ser id_sala ou id_docente
-function sobrepostos($conn,$atributo){
-    $sql="select $atributo,count(id_horario) as sobrepostos from (select * from aula group by coalesce(id_juncao,id_aula))as tabela where $atributo is not null group by $atributo,id_horario having count(id_horario)>1;";
-    return runQuery($conn,$sql);
-}
-function falhas($conn){
-$salaSobreposta=sobrepostos($conn,"id_sala");
-$profSobreposto=sobrepostos($conn,"id_docente");
-
-
-if ($salaSobreposta) 
-    foreach ($salaSobreposta as $s)
-        echo get_sigla($conn,$s["id_sala"])."<br>";
-if ($profSobreposto)
-    foreach ($profSobreposto as $s)
-        echo get_docente($conn, $s["id_docente"])."<br>";
 }
 
 //pesquisar salas definidas para uma determinada componente
@@ -228,7 +211,16 @@ function get_aulas($conn,$atributo,$id){
         </div>
 
 <?php
-falhas($conn);
+
+/* sobrepostos($conn); */
+/* docente_max_horas($conn); */
+/* turma_max_horas($conn); */
+/* aula_sem_sala($conn); */
+/* aula_sem_docente($conn); */
+/* aula_sem_horario($conn); */
+
+/* docente_sem_almoco($conn); */
+
 ?>
         <!--mostrar salas-->
         <div id="caixa_salas" style="display:none;" >
@@ -475,11 +467,13 @@ if ($id_horario && isset($aulas[$id_horario])) {
     data-id_juncao="<?= $aula['id_juncao'] ?>"
     data-salas="<?= $salas_aula ?>"
     onclick="atribuir_sala(<?= $idAula.",". $salas_aula ?>)"
+    <?php if(sobreposto($conn,$aula['id_aula'])) echo "style='background: hsl(2, 35%, 33%);'"; ?>
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
     <?= $turma ?><br>
     <?= $sigla_sala ?><br>
+
 </td>
 
 <?php } else { 

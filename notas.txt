@@ -1,0 +1,2 @@
+adicionar indicação visual da sobreposição.
+
