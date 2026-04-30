@@ -210,18 +210,32 @@ function get_aulas($conn,$atributo,$id){
             <h3 style="margin-left:15px; margin-top:20px; margin-bottom: 25px;"><b>Gerir Horarios</b></h3>
         </div>
 
+<!-- divisoes de erros de horario -->
+<div class="falhas" style="display:flex;">
+<details>
+<summary>Erros de horario</summary>
+<div style"display:flex" class="dropdown-content">
 <?php
+
+/* funcoes para detetar falhas nos horarios */
 
 /* sobrepostos($conn); */
 /* docente_max_horas($conn); */
 /* turma_max_horas($conn); */
-/* aula_sem_sala($conn); */
+/* aulas_sem_sala($conn); */
 /* aula_sem_docente($conn); */
 /* aula_sem_horario($conn); */
-
 /* docente_sem_almoco($conn); */
+/* turma_sem_almoco($conn); */
+/* erro_pref_docente($conn); */
+/* erro_pref_sala($conn); */
+/* erro_pref_turma($conn); */
 
 ?>
+</div>
+</div>
+</details>
+
         <!--mostrar salas-->
         <div id="caixa_salas" style="display:none;" >
             <form method="post" style="width:300px; " class="docentes">
@@ -274,7 +288,7 @@ if (!empty($id_turmas))
 <?php
 if (!empty($id_salas))
     foreach ($id_salas as $idx => $id_sala){
-        #pesquisa o nome da turma
+        #pesquisa o nome da sala
         $sql="select nome_sala from sala where id_sala='$id_sala'";
         $nome_sala=runQuery($conn,$sql)[0]['nome_sala'];
         $aulas = get_aulas($conn,'id_sala', $id_sala) ?? [];
@@ -437,6 +451,10 @@ if ($id_horario && isset($aulas[$id_horario])) {
     $idAula=$aula['id_aula'];
     $id_sala=$aula['id_sala'];
     $id_docente=$aula['id_docente'];
+    if ($id_docente)
+        $nome_docente = get_docente($conn,$id_docente);
+    else 
+        $nome_docente = "Sem docente";
     $salas_aula=salas_componente($conn,$idAula);
     #se a aula ja tiver uma sala definida pesquisa e atribui á variavel $sala
 
@@ -467,12 +485,15 @@ if ($id_horario && isset($aulas[$id_horario])) {
     data-id_juncao="<?= $aula['id_juncao'] ?>"
     data-salas="<?= $salas_aula ?>"
     onclick="atribuir_sala(<?= $idAula.",". $salas_aula ?>)"
-    <?php if(sobreposto($conn,$aula['id_aula'])) echo "style='background: hsl(2, 35%, 33%);'"; ?>
+    <?php if(sala_sobreposta($conn,$aula['id_aula']) or !$id_sala) echo "style='background: hsl(60, 55%, 53%);'"; ?>
+    <?php if(docente_sobreposta($conn,$aula['id_aula']) or turma_sobreposta($conn,$aula['id_aula'])) echo "style='background: hsl(2, 35%, 33%);'"; ?>
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>
+    <?= $nome_docente ?><br>
     <?= $turma ?><br>
     <?= $sigla_sala ?><br>
+
 
 </td>
 
