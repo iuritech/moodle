@@ -3,13 +3,15 @@
 <h2>Pagina de falhas</h2>
 <?php
 
+/* quarta feira a trarde impossivel */
+/* adicionar campo preferencia global na página de editar preferencias */
+/* preferencia default deve estar na base de dados */
+/* preferencias no impossivel deve aparecer a vermelho */
+/* preferencia das turmas não funciona */
 /* aparecer a aula que esta por baixo da sobreposta */
-/* trigger criar preferencias base, prof, turma,sala */
 
 
     /* feito */
-/* erro de preferencia deve verificar todos os slots das aulas */
-/* erro nas aulas sem docente */
 
 function sobrepostos($conn){
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,c.numero_horas,u.nome as nome_docente,t.nome as nome_turma,d.nome_uc,a.id_turma, h.hora_inicio, h.dia_semana
@@ -384,7 +386,7 @@ function erro_pref_turma($conn){
             from aula a
             join componente c on c.id_componente = a.id_componente
             join disciplina d on d.id_disciplina = c.id_disciplina
-            where id_docente =$id
+            where id_turma =$id
 ";
         $aulas = runQuery($conn,$sql);
         if ($aulas)

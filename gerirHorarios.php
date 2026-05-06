@@ -62,8 +62,8 @@ function salas_componente($conn,$idAula){
 // preferencias_turma id_turma
 // utilizador_preferencia id_utilizador
 function getPref($conn, $id, $tabela, $atributo) {
-    $preferencia="";
-    $query = "SELECT p.preferencia
+    $preferencia = "";
+   $query = "SELECT p.preferencia
         FROM $tabela e
         JOIN preferencias p ON e.id_preferencias = p.id_preferencias
         WHERE e.$atributo = ?";
@@ -77,8 +77,15 @@ function getPref($conn, $id, $tabela, $atributo) {
         }
         $stmt->close();
     }
-    // Se não houver preferências, devolve array de 50 zeros
-    return array_fill(0, 50, 0);
+    // Se não houver preferências, devolve preferencia default
+     /* preferencias default */
+    if ($atributo = "id_utilizador")
+        $sql="select * from preferencias where id_preferencias = 1;";
+    if ($atributo = "id_sala")
+        $sql="select * from preferencias where id_preferencias = 2;";
+    if ($atributo = "id_turma")
+        $sql="select * from preferencias where id_preferencias = 3;";
+    return explode(',',runQuery($conn, $sql)[0]["preferencia"]); 
 }
 
 # verifica os docentes/turmas/salas que estao selecionadas
@@ -227,9 +234,9 @@ function get_aulas($conn,$atributo,$id){
 /* aula_sem_horario($conn); */
 /* docente_sem_almoco($conn); */
 /* turma_sem_almoco($conn); */
-/* erro_pref_docente($conn); */
-/* erro_pref_sala($conn); */
-/* erro_pref_turma($conn); */
+erro_pref_docente($conn);
+erro_pref_sala($conn);
+erro_pref_turma($conn);
 
 ?>
 </div>
@@ -256,7 +263,7 @@ if (!empty($id_docentes))
         $sql="select nome from utilizador where id_utilizador='$id_docente'";
         $nome_docente=runQuery($conn,$sql)[0]['nome'];
         $aulas = get_aulas($conn,'id_docente', $id_docente) ?? [];
-        $preferencias = getPref($conn, $id_docente,"utilizador_preferencia","id_utilizador" );
+        $preferencias = getPref($conn, $id_docente,"utilizador_preferencia","id_utilizador");
 ?>
     <div class="caixas" style="display:flex;">
                 <div class="panel" data-id_docente="<?= $id_docente ?>">
@@ -274,7 +281,7 @@ if (!empty($id_turmas))
         $sql="select nome from turma where id_turma='$id_turma'";
         $nome_turma=runQuery($conn,$sql)[0]['nome'];
         $aulas = get_aulas($conn,'id_turma', $id_turma) ?? [];
-        $preferencias = getPref($conn, $id_turma,"preferencias_turma","id_turma" );
+        $preferencias = getPref($conn, $id_turma,"preferencias_turma","id_turma");
 ?>
         <div class="caixas" style="display:flex;">
                     <div class="panel" data-id_turma="<?= $id_turma ?>">
@@ -292,7 +299,7 @@ if (!empty($id_salas))
         $sql="select nome_sala from sala where id_sala='$id_sala'";
         $nome_sala=runQuery($conn,$sql)[0]['nome_sala'];
         $aulas = get_aulas($conn,'id_sala', $id_sala) ?? [];
-        $preferencias = getPref($conn, $id_sala,"preferencia_sala","id_sala" );
+        $preferencias = getPref($conn, $id_sala,"preferencia_sala","id_sala");
 ?>
         <div class="caixas" style="display:flex;">
                     <div class="panel" data-id_sala="<?= $id_sala ?>">
@@ -485,8 +492,8 @@ if ($id_horario && isset($aulas[$id_horario])) {
     data-id_juncao="<?= $aula['id_juncao'] ?>"
     data-salas="<?= $salas_aula ?>"
     onclick="atribuir_sala(<?= $idAula.",". $salas_aula ?>)"
+    <?php if(docente_sobreposta($conn,$aula['id_aula']) or turma_sobreposta($conn,$aula['id_aula']) or !$id_docente) echo "style='background: hsl(2, 35%, 33%);'"; ?>
     <?php if(sala_sobreposta($conn,$aula['id_aula']) or !$id_sala) echo "style='background: hsl(60, 55%, 53%);'"; ?>
-    <?php if(docente_sobreposta($conn,$aula['id_aula']) or turma_sobreposta($conn,$aula['id_aula'])) echo "style='background: hsl(2, 35%, 33%);'"; ?>
     style="color:#e7e8eb;">
     <b><?= $nome_uc ?></b><br>
     <?= $nome_tipocomponente ?><br>

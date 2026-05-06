@@ -24,11 +24,12 @@ mysqli_select_db($conn, "apoio_utc_2021_2022");
 $user_id = $_SESSION["id"];
 
 // Tipos de entidades disponíveis
-$entity_types = ['Docente', 'Turma', 'Sala'];
+$entity_types = ['Docente', 'Turma', 'Sala','Default'];
 
 // Obter o tipo de entidade e ID selecionados
 $entity_type = $_POST['entity_type'] ?? $_SESSION['entity_type'] ?? '';
 $entity_id = $_POST['entity_id'] ?? $_SESSION['entity_id'] ?? '';
+
 
 if (!empty($entity_type)) {
     $_SESSION['entity_type'] = $entity_type;
