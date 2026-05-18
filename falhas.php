@@ -3,16 +3,18 @@
 <h2>Pagina de falhas</h2>
 <?php
 
-/* quarta feira a trarde impossivel */
-/* adicionar campo preferencia global na página de editar preferencias */
-/* preferencia default deve estar na base de dados */
-/* preferencias no impossivel deve aparecer a vermelho */
-/* preferencia das turmas não funciona */
+/* trigger pref default */
+
+/* esta está dificil */
 /* aparecer a aula que esta por baixo da sobreposta */
 
+    /* meio feito */
+/* adicionar campo preferencia global na página de editar preferencias */
 
-    /* feito */
+    /* feito */ 
+/* contar numero de erros na lista */
 
+$n_erros = 0;
 function sobrepostos($conn){
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,c.numero_horas,u.nome as nome_docente,t.nome as nome_turma,d.nome_uc,a.id_turma, h.hora_inicio, h.dia_semana
         from aula a 
@@ -29,16 +31,19 @@ function sobrepostos($conn){
             /* aulas sobrepostas nos docentes */
             if ($sobrepostas = docente_sobreposta($conn,$id_aula)){
                 foreach ($sobrepostas as $s)
+                    $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
                     print "A disciplina: ".$a["nome_uc"]." está sobreposta no docente: ".$a["nome_docente"]." turmas: ".$s["nome_turma"]." / ".$a["nome_turma"]." na: ".$a["dia_semana"]." ás: ".$a["hora_inicio"]."<br>";
             }
             /* aulas sobrepostas nas salas */
             if ($sobrepostas = sala_sobreposta($conn,$id_aula)){
                 foreach ($sobrepostas as $s)
+                    $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
                     print "A disciplina: ".$a["nome_uc"]." está sobreposta na sala: ".$s["sigla_sala"]." turmas: ".$s["nome_turma"]." / ".$a["nome_turma"]." na: ".$a["dia_semana"]." ás: ".$a["hora_inicio"]."<br>";
             }
             /* aulas sobrepostas das turmas */
             if ($sobrepostas = turma_sobreposta($conn,$id_aula)){
                 foreach ($sobrepostas as $s)
+                    $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
                     print "A disciplina: ".$a["nome_uc"]." está sobreposta na turma: ".$a["nome_turma"]." na: ".$a["dia_semana"]." ás: ".$a["hora_inicio"]."<br>";
             }
         }
@@ -77,8 +82,9 @@ function docente_sobreposta($conn,$id_aula){
         join turma t on t.id_turma = a.id_turma
         where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente ";
         $sobrepostas = runQuery($conn,$sql);
-        if ($sobrepostas)
+        if ($sobrepostas){
             return $sobrepostas;
+        }
     }
     return false;
 };
@@ -106,8 +112,9 @@ function sala_sobreposta($conn,$id_aula){
         join sala s on s.id_sala = a.id_sala
         where id_horario between $horario and $Hfim and id_aula <> $id and a.id_sala = $sala ";
         $sobrepostas = runQuery($conn,$sql);
-        if ($sobrepostas)
+        if ($sobrepostas){
             return $sobrepostas;
+        }
     }
     return false;
 
@@ -115,66 +122,68 @@ function sala_sobreposta($conn,$id_aula){
 
 function turma_sobreposta($conn,$id_aula){
     $aula = pesquia_aula($conn,$id_aula);
-        $id = $aula["id_aula"];
-        $horario = $aula["id_horario"];
-        $Hfim = $aula["id_horario"]+$aula["numero_horas"]-1;
-        $turma = $aula["id_turma"];
-                /* aulas sobrepostas das turmas */
-                $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao from aula a
-                    join utilizador u on u.id_utilizador = a.id_docente
-                    join turma t on t.id_turma = a.id_turma
-                    where id_horario between $horario and $Hfim and id_aula <> $id and a.id_turma = $turma ";
-                    $sobrepostas = runQuery($conn,$sql);
-                    if ($sobrepostas)
-                        return $sobrepostas;
+    $id = $aula["id_aula"];
+    $horario = $aula["id_horario"];
+    $Hfim = $aula["id_horario"]+$aula["numero_horas"]-1;
+    $turma = $aula["id_turma"];
+    /* aulas sobrepostas das turmas */
+    $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao from aula a
+        join utilizador u on u.id_utilizador = a.id_docente
+        join turma t on t.id_turma = a.id_turma
+        where id_horario between $horario and $Hfim and id_aula <> $id and a.id_turma = $turma ";
+    $sobrepostas = runQuery($conn,$sql);
+    if ($sobrepostas){
+        return $sobrepostas;
+    }
     return false;
    
 };
 
-
-
-
 function docente_max_horas($conn){
-$sql = "select * from utilizador";
-$docentes = runQuery($conn,$sql);
-foreach ($docentes as $docente){
-    $nome = $docente["nome"];
-    $id = $docente["id_utilizador"];
-    $sql = "select sum(numero_horas) as aulas, dia_semana, id_docente 
-        from (select id_aula, a.id_docente, dia_semana, numero_horas from aula a
-        join horario h on h.id_horario = a.id_horario
-        join componente c on a.id_componente = c.id_componente 
-        where a.id_docente = $id
-        GROUP BY COALESCE(id_juncao, id_aula)
+    $sql = "select * from utilizador";
+    $docentes = runQuery($conn,$sql);
+    foreach ($docentes as $docente){
+        $nome = $docente["nome"];
+        $id = $docente["id_utilizador"];
+        $sql = "select sum(numero_horas) as aulas, dia_semana, id_docente 
+            from (select id_aula, a.id_docente, dia_semana, numero_horas from aula a
+            join horario h on h.id_horario = a.id_horario
+            join componente c on a.id_componente = c.id_componente 
+            where a.id_docente = $id
+            GROUP BY COALESCE(id_juncao, id_aula)
         ) as t
         group by dia_semana";
-    $aulas_dia = runQuery($conn,$sql);
-    if ($aulas_dia)
-        foreach ($aulas_dia as $aulas)
-            if ($aulas["aulas"] >7)
-                echo ($aulas["aulas"]."H ".$aulas["dia_semana"]." ".$nome."<br>");
-}
+        $aulas_dia = runQuery($conn,$sql);
+        if ($aulas_dia)
+            foreach ($aulas_dia as $aulas)
+                if ($aulas["aulas"] >7){
+                    $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
+                    echo ($aulas["aulas"]."H ".$aulas["dia_semana"]." ".$nome."<br>");
+                }
+    }
 }
 
 function turma_max_horas($conn){
-$sql = "select * from turma";
-$turmas = runQuery($conn,$sql);
-foreach ($turmas as $turma){
-    $nome = $turma["nome"];
-    $id = $turma["id_turma"];
-    $sql = "select sum(numero_horas) as aulas, dia_semana, id_turma 
-        from (select id_aula, a.id_turma, dia_semana, numero_horas from aula a
-        join horario h on h.id_horario = a.id_horario
-        join componente c on a.id_componente = c.id_componente 
-        where a.id_turma = $id
+    $sql = "select * from turma";
+    $turmas = runQuery($conn,$sql);
+    foreach ($turmas as $turma){
+        $nome = $turma["nome"];
+        $id = $turma["id_turma"];
+        $sql = "select sum(numero_horas) as aulas, dia_semana, id_turma 
+            from (select id_aula, a.id_turma, dia_semana, numero_horas from aula a
+            join horario h on h.id_horario = a.id_horario
+            join componente c on a.id_componente = c.id_componente 
+            where a.id_turma = $id
         ) as t
         group by dia_semana";
-    $aulas_dia = runQuery($conn,$sql);
-    if ($aulas_dia)
-        foreach ($aulas_dia as $aulas)
-            if ($aulas["aulas"] >8)
-                echo ($aulas["aulas"]."H ".$aulas["dia_semana"]." ".$nome."<br>");
-}
+        $aulas_dia = runQuery($conn,$sql);
+        if ($aulas_dia)
+            foreach ($aulas_dia as $aulas)
+                if ($aulas["aulas"] >8){
+                    $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
+                    echo ($aulas["aulas"]."H ".$aulas["dia_semana"]." ".$nome."<br>");
+                }
+    }
 }
 
 function aulas_sem_sala($conn){
@@ -191,7 +200,7 @@ function aulas_sem_sala($conn){
             $turma= $a["nome_turma"];
             $nome_uc= $a["nome_uc"];
             $id= $a["id_aula"];
-
+            $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
             echo "A Uc $nome_uc da turma $turma não tem sala marcada <br>";
         }
 }
@@ -211,6 +220,7 @@ function aula_sem_docente($conn){
             $turma= $a["nome_turma"];
             $nome_uc= $a["nome_uc"];
             $id= $a["id_aula"];
+            $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
             echo "A Uc $nome_uc da turma $turma não tem Docente atribuido <br>";
         }
 }
@@ -230,6 +240,7 @@ function aula_sem_horario($conn){
             $turma= $a["nome_turma"];
             $nome_uc= $a["nome_uc"];
             $id= $a["id_aula"];
+            $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
             echo "A Uc $nome_uc da turma $turma não tem hórario atribuido <br>";
         }
 }
@@ -283,8 +294,10 @@ function docente_sem_almoco($conn){
             $aulas = runQuery($conn,$sql);
             if ($aulas)
                 if (meiodia_ocupado($aulas))
-                    if (uma_h_ocupado($aulas))
+                    if (uma_h_ocupado($aulas)){
+                        $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
                         echo "Docente $nome sem almoço na $dia_s <br>";
+                    }
         }
 }
 
@@ -304,8 +317,10 @@ function turma_sem_almoco($conn){
             $aulas = runQuery($conn,$sql);
             if ($aulas)
                 if (meiodia_ocupado($aulas))
-                    if (uma_h_ocupado($aulas))
+                    if (uma_h_ocupado($aulas)){
+                        $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
                         echo "Turma $nome sem almoço na $dia_s <br>";
+                    }
         }
 }
 
@@ -411,9 +426,44 @@ function erro_preferencia($conn,$id,$tabela,$atributo, $aula){
         $horario = $aula["id_horario"];
         $hfim = $horario + $aula["numero_horas"] - 1 ;
         for ($i = $horario; $i <= $hfim; $i++)
-        $preferencia = $pref[$matriz[$i]];
-    if ($preferencia < 1)
-        return $frase[$preferencia];
+            $preferencia = $pref[$matriz[$i]];
+        if ($preferencia < 1){
+            $GLOBALS["n_erros"]=$GLOBALS["n_erros"]+1;
+            return $frase[$preferencia];
+        }
+    }
+    return false;
+}
+
+function erro_pref_visual($conn, $aula){
+    $aulas = runQuery($conn,"select * from aula a
+        join componente c on c.id_componente = a.id_componente
+        join disciplina d on d.id_disciplina = c.id_disciplina
+        where id_aula = $aula");
+    $aula = $aulas[0];
+    /* verifica se a aula esta na fora de preferencia para o docente */
+    if ($aula["id_docente"]){
+        $atributo = "id_utilizador";
+        $tabela = "utilizador_preferencia";
+        $id = $aula["id_docente"];
+        if (erro_preferencia($conn,$id,$tabela,$atributo,$aula))
+            return true;
+    }
+    /* verifica se a aula esta na fora de preferencia para a turma */
+    if ($aula["id_turma"]){
+        $atributo = "id_turma";
+        $tabela = "preferencias_turma";
+        $id = $aula["id_turma"];
+        if (erro_preferencia($conn,$id,$tabela,$atributo,$aula))
+            return true;
+    }
+    /* verifica se a aula esta na fora de preferencia para a sala */
+    if ($aula["id_sala"]){
+        $atributo = "id_sala";
+        $tabela = "preferencia_sala";
+        $id = $aula["id_sala"];
+        if (erro_preferencia($conn,$id,$tabela,$atributo,$aula))
+            return true;
     }
     return false;
 }

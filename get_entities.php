@@ -22,9 +22,9 @@ if (empty($entity_type)) {
 }
 
 $queries = [
-    'Docente' => "SELECT id_utilizador AS id, nome AS name FROM utilizador WHERE id_funcao >= 4",
-    'Turma' => "SELECT id_turma AS id, nome AS name FROM turma",
-    'Sala' => "SELECT id_sala AS id, nome_sala AS name FROM sala"
+    'Docente' => "SELECT id_utilizador AS id, nome AS name FROM utilizador WHERE id_funcao >= 4 order by nome",
+    'Turma' => "SELECT id_turma AS id, nome AS name FROM turma order by nome",
+    'Sala' => "SELECT id_sala AS id, nome_sala AS name FROM sala order by nome_sala"
 ];
 
 if (!isset($queries[$entity_type])) {

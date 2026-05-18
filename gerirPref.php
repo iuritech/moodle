@@ -24,7 +24,7 @@ mysqli_select_db($conn, "apoio_utc_2021_2022");
 $user_id = $_SESSION["id"];
 
 // Tipos de entidades disponíveis
-$entity_types = ['Docente', 'Turma', 'Sala','Default'];
+$entity_types = ['Docente', 'Turma', 'Sala'];
 
 // Obter o tipo de entidade e ID selecionados
 $entity_type = $_POST['entity_type'] ?? $_SESSION['entity_type'] ?? '';
@@ -44,7 +44,7 @@ if (!empty($entity_type) && !empty($entity_id)) {
     $table_map = [
         'Docente' => ['table' => 'utilizador_preferencia', 'id_column' => 'id_utilizador'],
         'Turma' => ['table' => 'preferencias_turma', 'id_column' => 'id_turma'],
-        'Sala' => ['table' => 'preferencia_sala', 'id_column' => 'id_sala']
+        'Sala' => ['table' => 'preferencia_sala', 'id_column' => 'id_sala'],
     ];
 
     if (isset($table_map[$entity_type])) {
@@ -346,6 +346,10 @@ function updateEntityList() {
                 console.error('Erro:', response.error);
                 return;
             }
+            const option = document.createElement('option');
+            option.value = "1";
+            option.text = "global";
+            entityIdSelect.appendChild(option);
             response.forEach(entity => {
                 const option = document.createElement('option');
                 option.value = entity.id;
