@@ -241,7 +241,7 @@ erro_pref_turma($conn);
 </div>
 </div>
 </details>
-Numero de erros encontrados: <?=$GLOBALS["n_erros"]?>
+Erros encontrados: <?=$GLOBALS["n_erros"]?>
 
         <!--mostrar salas-->
         <div id="caixa_salas" style="display:none;" >
