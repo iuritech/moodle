@@ -3,16 +3,13 @@
 <h2>Pagina de falhas</h2>
 <?php
 
-/* trigger pref default */
-
 /* esta está dificil */
 /* aparecer a aula que esta por baixo da sobreposta */
 
-    /* meio feito */
-/* adicionar campo preferencia global na página de editar preferencias */
-
     /* feito */ 
 /* contar numero de erros na lista */
+/* trigger pref default */
+/* adicionar campo preferencia global na página de editar preferencias */
 
 $n_erros = 0;
 function sobrepostos($conn){

@@ -26,6 +26,10 @@ $user_id = $_SESSION["id"];
 // Tipos de entidades disponíveis
 $entity_types = ['Docente', 'Turma', 'Sala'];
 
+$default["Docente"] = 1;
+$default["Sala"] = 2;
+$default["Turma"] = 3;
+
 // Obter o tipo de entidade e ID selecionados
 $entity_type = $_POST['entity_type'] ?? $_SESSION['entity_type'] ?? '';
 $entity_id = $_POST['entity_id'] ?? $_SESSION['entity_id'] ?? '';
@@ -51,13 +55,21 @@ if (!empty($entity_type) && !empty($entity_id)) {
         $table = $table_map[$entity_type]['table'];
         $id_column = $table_map[$entity_type]['id_column'];
 
-        $query = "SELECT p.preferencia 
-                  FROM $table e 
-                  JOIN preferencias p ON e.id_preferencias = p.id_preferencias 
-                  WHERE e.$id_column = ?";
-        
+        if ($entity_id == -1){
+            $id= $default[$entity_type];
+            $query = "SELECT preferencia FROM preferencias WHERE id_preferencias = ?";
+        }
+        else
+            $query = "SELECT p.preferencia 
+                      FROM $table e 
+                      JOIN preferencias p ON e.id_preferencias = p.id_preferencias 
+                      WHERE e.$id_column = ?";
+            
         if ($stmt = mysqli_prepare($conn, $query)) {
-            mysqli_stmt_bind_param($stmt, "i", $entity_id);
+            if ($entity_id ==-1)
+                mysqli_stmt_bind_param($stmt, "i", $id);
+            else
+                mysqli_stmt_bind_param($stmt, "i", $entity_id);
             mysqli_stmt_execute($stmt);
             $result = mysqli_stmt_get_result($stmt);
             
@@ -103,9 +115,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($entity_type) && !empty($ent
     $table = $table_map[$entity_type]['table'];
     $id_column = $table_map[$entity_type]['id_column'];
 
-    // Verificar se a entidade já tem preferências
-    $check_query = "SELECT id_preferencias FROM $table WHERE $id_column = ?";
+        // Verificar se a entidade já tem preferências
+        $check_query = "SELECT id_preferencias FROM $table WHERE $id_column = ?";
+    if ($entity_id == -1){
+$update_query = "UPDATE preferencias SET preferencia = ? WHERE id_preferencias = ?";
+            if ($stmt_update = mysqli_prepare($conn, $update_query)) {
+                mysqli_stmt_bind_param($stmt_update, "si", $schedule_string, $id);
+                if (mysqli_stmt_execute($stmt_update)) {
+                    echo "Preferências atualizadas com sucesso para $entity_type ID $entity_id!<br>";
+                } else {
+                    echo "Erro ao atualizar as preferências: " . mysqli_error($conn) . "<br>";
+                    exit;
+                }
+                mysqli_stmt_close($stmt_update);
+            } else {
+                echo "Erro ao preparar a atualização: " . mysqli_error($conn) . "<br>";
+                exit;
+            }
+    }
+    else
     if ($stmt = mysqli_prepare($conn, $check_query)) {
+    if ($entity_id == -1)
+        mysqli_stmt_bind_param($stmt, "i", $id);
+    else
         mysqli_stmt_bind_param($stmt, "i", $entity_id);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
@@ -347,7 +379,7 @@ function updateEntityList() {
                 return;
             }
             const option = document.createElement('option');
-            option.value = "1";
+            option.value = "-1";
             option.text = "global";
             entityIdSelect.appendChild(option);
             response.forEach(entity => {
