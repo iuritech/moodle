@@ -20,27 +20,32 @@ $(".ocupado").draggable({
 
     start: function () {
 
+            //isto está a dar erro
         let horasAmarelas = $(this).attr("data-horas_amarelas");
         // converter string para array
-        horasAmarelas = JSON.parse(
-            horasAmarelas.replace(/'/g, '"')
-        );
-        // altera apenas as células disponíveis
-        horasAmarelas.forEach(function(idHorario) {
-            $(".disponivel[data-id_horario='" + idHorario + "']")
-                .addClass("horas-amarelas");
-        });
+        if (horasAmarelas){
+            horasAmarelas = JSON.parse(
+                horasAmarelas.replace(/'/g, '"')
+            );
+            // altera apenas as células disponíveis
+            horasAmarelas.forEach(function(idHorario) {
+                $(".disponivel[data-id_horario='" + idHorario + "']")
+                    .addClass("horas-amarelas");
+            });
+        }
 
         let horasInvalidas = $(this).attr("data-horas_invalidas");
-        // converter string para array
-        horasInvalidas = JSON.parse(
-            horasInvalidas.replace(/'/g, '"')
-        );
-        // altera apenas as células disponíveis
-        horasInvalidas.forEach(function(idHorario) {
-            $(".disponivel[data-id_horario='" + idHorario + "']")
-                .addClass("horas-invalidas");
-        });
+        if (horasInvalidas ){
+            // converter string para array
+            horasInvalidas = JSON.parse(
+                horasInvalidas.replace(/'/g, '"')
+            );
+            // altera apenas as células disponíveis
+            horasInvalidas.forEach(function(idHorario) {
+                $(".disponivel[data-id_horario='" + idHorario + "']")
+                    .addClass("horas-invalidas");
+            });
+        }
 
         $(".disponivel").addClass("horas-verdes");
 

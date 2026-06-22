@@ -458,10 +458,12 @@ function erro_pref_visual($conn, $aula){
 }
 function slots_amarelos($conn,$id_aula){
     $horas= runQuery($conn,"select id_horario from horario");
+    $horas_invalidas = null;
     foreach ($horas as $h)
         if (slot_amarelo($conn,$h["id_horario"],$id_aula))
             $horas_invalidas[] = $h["id_horario"];
-    return json_encode($horas_invalidas);
+    if ($horas_invalidas)
+        return json_encode($horas_invalidas);
 }
 function slot_amarelo($conn,$id_horario,$id_aula){
     $aula = pesquia_aula($conn,$id_aula);
@@ -493,10 +495,12 @@ function slot_amarelo($conn,$id_horario,$id_aula){
 }
 function slots_vermelhos($conn,$id_aula){
     $horas= runQuery($conn,"select id_horario from horario");
+    $horas_invalidas = null;
     foreach ($horas as $h)
         if (slot_vermelho($conn,$h["id_horario"],$id_aula) or preferencias($conn,$h["id_horario"],$id_aula))
             $horas_invalidas[] = $h["id_horario"];
-    return json_encode($horas_invalidas);
+    if ($horas_invalidas)
+        return json_encode($horas_invalidas);
 }
 
 function slot_vermelho($conn,$id_horario,$id_aula){

@@ -497,7 +497,7 @@ if ($id_horario && isset($aulas[$id_horario])) {
     <?php if ($id_sala){ ?>
         data-horas_amarelas="<?= slots_amarelos($conn,$idAula)?>"
     <?php } ?>
-    <?php if ($id_docente){ ?>
+    <?php if ($id_docente and slots_vermelhos($conn,$idAula)){ ?>
         data-horas_invalidas="<?= slots_vermelhos($conn,$idAula)?>"
     <?php } ?>
     onclick="atribuir_sala(<?= $idAula.",". $salas_aula ?>)"
