@@ -55,8 +55,24 @@ select:focus {
     z-index: 9999;
 }
 
+.horas-verdes {
+    background-color: green !important;
+    transition: background-color 0.2s;
+}
+
+.horas-amarelas {
+    background-color: yellow !important;
+    transition: background-color 0.2s;
+}
+
+.horas-invalidas {
+    background-color: red !important;
+    transition: background-color 0.2s;
+}
+
 .ui-state-hover {
     background: #d4edff !important;
+    transition: background-color 0.2s;
 }
 
 .disciplina-draggable {

@@ -3,14 +3,6 @@
 <h2>Pagina de falhas</h2>
 <?php
 
-/* esta está dificil */
-/* aparecer a aula que esta por baixo da sobreposta */
-
-    /* feito */ 
-/* contar numero de erros na lista */
-/* trigger pref default */
-/* adicionar campo preferencia global na página de editar preferencias */
-
 $n_erros = 0;
 function sobrepostos($conn){
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,c.numero_horas,u.nome as nome_docente,t.nome as nome_turma,d.nome_uc,a.id_turma, h.hora_inicio, h.dia_semana
@@ -73,11 +65,11 @@ function docente_sobreposta($conn,$id_aula){
             join turma t on t.id_turma = a.id_turma
             where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente and id_juncao <> $juncao
             or id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente and id_juncao is null ";
-    else
-        $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao from aula a
-        join utilizador u on u.id_utilizador = a.id_docente
-        join turma t on t.id_turma = a.id_turma
-        where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente ";
+        else
+            $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao from aula a
+            join utilizador u on u.id_utilizador = a.id_docente
+            join turma t on t.id_turma = a.id_turma
+            where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente ";
         $sobrepostas = runQuery($conn,$sql);
         if ($sobrepostas){
             return $sobrepostas;
@@ -461,6 +453,144 @@ function erro_pref_visual($conn, $aula){
         $id = $aula["id_sala"];
         if (erro_preferencia($conn,$id,$tabela,$atributo,$aula))
             return true;
+    }
+    return false;
+}
+function slots_amarelos($conn,$id_aula){
+    $horas= runQuery($conn,"select id_horario from horario");
+    foreach ($horas as $h)
+        if (slot_amarelo($conn,$h["id_horario"],$id_aula))
+            $horas_invalidas[] = $h["id_horario"];
+    return json_encode($horas_invalidas);
+}
+function slot_amarelo($conn,$id_horario,$id_aula){
+    $aula = pesquia_aula($conn,$id_aula);
+    $n_horas = $aula["numero_horas"];
+    $sala = $aula["id_sala"];
+    $id_juncao = $aula["id_juncao"];
+    $exclude = "id_aula <> $id_aula";
+    if (!empty($id_juncao)) {
+        $exclude .= " and (id_juncao <> $id_juncao or id_juncao is null)";
+    }
+    $sql = "
+        select *
+        from aula a
+        join componente c on a.id_componente = c.id_componente
+        where $exclude
+        and (
+            $id_horario between a.id_horario
+            and (a.id_horario + c.numero_horas - 1)
+            or
+            a.id_horario between $id_horario
+            and ($id_horario + $n_horas - 1)
+        )
+        and a.id_sala = $sala
+        
+    ";
+    $sobreposta = runQuery($conn,$sql);
+    return !empty($sobreposta);
+
+}
+function slots_vermelhos($conn,$id_aula){
+    $horas= runQuery($conn,"select id_horario from horario");
+    foreach ($horas as $h)
+        if (slot_vermelho($conn,$h["id_horario"],$id_aula) or preferencias($conn,$h["id_horario"],$id_aula))
+            $horas_invalidas[] = $h["id_horario"];
+    return json_encode($horas_invalidas);
+}
+
+function slot_vermelho($conn,$id_horario,$id_aula){
+    $aula = pesquia_aula($conn,$id_aula);
+    $n_horas = $aula["numero_horas"];
+    $docente = $aula["id_docente"];
+    $turma   = $aula["id_turma"];
+    $id_juncao = $aula["id_juncao"];
+    // Turmas a validar
+    $turmas = [];
+    // Se tiver junção vai buscar todas as turmas
+    if (!empty($id_juncao)) {
+        $sqlTurmas = "
+            select distinct id_turma
+            from aula
+            where id_juncao = $id_juncao
+        ";
+        $resTurmas = runQuery($conn,$sqlTurmas);
+        foreach($resTurmas as $t){
+            $turmas[] = $t["id_turma"];
+        }
+    } else {
+        $turmas[] = $turma;
+    }
+    // cria lista SQL
+    $turmas_sql = implode(",", $turmas);
+    $exclude = "id_aula <> $id_aula";
+    if (!empty($id_juncao)) {
+        $exclude .= " and (id_juncao <> $id_juncao or id_juncao is null)";
+    }
+    $sql = "
+        select *
+        from aula a
+        join componente c on a.id_componente = c.id_componente
+        where $exclude
+        and (
+            $id_horario between a.id_horario
+            and (a.id_horario + c.numero_horas - 1)
+            or
+            a.id_horario between $id_horario
+            and ($id_horario + $n_horas - 1)
+        )
+        and (
+            a.id_docente = $docente
+            or a.id_turma in ($turmas_sql)
+        )
+    ";
+    $sobreposta = runQuery($conn,$sql);
+    return !empty($sobreposta);
+}
+
+function preferencias($conn,$id_horario,$id_aula){
+    $aula = pesquia_aula($conn,$id_aula);
+    $n_horas   = $aula["numero_horas"];
+    $docente   = $aula["id_docente"];
+    $sala      = $aula["id_sala"];
+    $turma     = $aula["id_turma"];
+    $id_juncao = $aula["id_juncao"];
+    $matriz = matriz_preferencias($conn);
+    // Turmas a validar
+    $turmas = [];
+    if (!empty($id_juncao)) {
+        $resTurmas = runQuery($conn,"
+            select distinct id_turma
+            from aula
+            where id_juncao = $id_juncao
+        ");
+        foreach($resTurmas as $t){
+            $turmas[] = $t["id_turma"];
+        }
+    } else {
+        $turmas[] = $turma;
+    }
+    // Preferências (buscar apenas uma vez)
+    $pref_doc = getPref($conn,$docente,'utilizador_preferencia','id_utilizador');
+    $pref_sal = getPref($conn,$sala,'preferencia_sala','id_sala');
+    $pref_tur = [];
+    foreach($turmas as $t){
+        $pref_tur[$t] = getPref($conn,$t,'preferencias_turma','id_turma');
+    }
+    // Verificar todos os slots que a aula iria ocupar
+    for($h = $id_horario; $h < $id_horario + $n_horas; $h++){
+        $i = $matriz[$h];
+        // Docente
+        if ($docente && $pref_doc[$i] == 0)
+            return true;
+        // Sala
+        if ($sala && $pref_sal[$i] == 0)
+            return true;
+        // Turmas
+        foreach($turmas as $t){
+            if ($pref_tur[$t][$i] == 0)
+                return true;
+        }
     }
     return false;
 }

@@ -10,13 +10,51 @@ $(function() {
 });
 
 $(".ocupado").draggable({
-helper: "clone",
+    helper: "clone",
     revert: "invalid",
     cursor: "move",
-    opacity: 0.8,
+    opacity: 0.3,
     zIndex: 9999,
-    appendTo: "body"
+    appendTo: "body",
+
+
+    start: function () {
+
+        let horasAmarelas = $(this).attr("data-horas_amarelas");
+        // converter string para array
+        horasAmarelas = JSON.parse(
+            horasAmarelas.replace(/'/g, '"')
+        );
+        // altera apenas as células disponíveis
+        horasAmarelas.forEach(function(idHorario) {
+            $(".disponivel[data-id_horario='" + idHorario + "']")
+                .addClass("horas-amarelas");
+        });
+
+        let horasInvalidas = $(this).attr("data-horas_invalidas");
+        // converter string para array
+        horasInvalidas = JSON.parse(
+            horasInvalidas.replace(/'/g, '"')
+        );
+        // altera apenas as células disponíveis
+        horasInvalidas.forEach(function(idHorario) {
+            $(".disponivel[data-id_horario='" + idHorario + "']")
+                .addClass("horas-invalidas");
+        });
+
+        $(".disponivel").addClass("horas-verdes");
+
+    },
+
+    stop: function () {
+        $(".disponivel").removeClass("horas-amarelas");
+        $(".disponivel").removeClass("horas-invalidas");
+        $(".disponivel").removeClass("horas-verdes");
+
+    }
+
 });
+
 
 // Área para soltar (fora da tabela)
 $("#disciplinas-lista").droppable({
@@ -135,6 +173,4 @@ function myFunction(item, index) {
 
 
 }
-
-
 

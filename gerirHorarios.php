@@ -5,6 +5,8 @@ include('bd.h');
 include('bd_final.php');
 include('falhas.php');
 
+/* validar sobrepostos e preferencias impossiveis */
+/* adicionar array nas aulas com os id_horario de movimentos validos */
 
 estaLogado();
 
@@ -266,7 +268,7 @@ if (!empty($id_docentes))
         $preferencias = getPref($conn, $id_docente,"utilizador_preferencia","id_utilizador");
 ?>
     <div class="caixas" style="display:flex;">
-                <div class="panel" data-id_docente="<?= $id_docente ?>">
+                <div class="panel" id="docente_<?=$id_docente?> " data-id_docente="<?= $id_docente ?>">
                     <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_docente) ?></h3>
         <?= imprime_horario($conn,$aulas,$preferencias); ?>
         <?= imprime_lista_lateral($conn,$id_docente,"id_docente"); ?>
@@ -284,7 +286,7 @@ if (!empty($id_turmas))
         $preferencias = getPref($conn, $id_turma,"preferencias_turma","id_turma");
 ?>
         <div class="caixas" style="display:flex;">
-                    <div class="panel" data-id_turma="<?= $id_turma ?>">
+                    <div class="panel" id="turma_<?=$id_turma?>" data-id_turma="<?= $id_turma ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_turma) ?></h3>
             <?= imprime_horario($conn,$aulas,$preferencias); ?>
             <?= imprime_lista_lateral($conn,$id_turma,"id_turma"); ?>
@@ -302,7 +304,7 @@ if (!empty($id_salas))
         $preferencias = getPref($conn, $id_sala,"preferencia_sala","id_sala");
 ?>
         <div class="caixas" style="display:flex;">
-                    <div class="panel" data-id_sala="<?= $id_sala ?>">
+                    <div class="panel" id="sala_<?=$id_sala?>" data-id_sala="<?= $id_sala ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_sala) ?></h3>
             <?= imprime_horario($conn,$aulas,$preferencias); ?>
                     </div>
@@ -492,6 +494,12 @@ if ($id_horario && isset($aulas[$id_horario])) {
     data-id_docente="<?= $id_docente ?>"
     data-id_juncao="<?= $aula['id_juncao'] ?>"
     data-salas="<?= $salas_aula ?>"
+    <?php if ($id_sala){ ?>
+        data-horas_amarelas="<?= slots_amarelos($conn,$idAula)?>"
+    <?php } ?>
+    <?php if ($id_docente){ ?>
+        data-horas_invalidas="<?= slots_vermelhos($conn,$idAula)?>"
+    <?php } ?>
     onclick="atribuir_sala(<?= $idAula.",". $salas_aula ?>)"
     <?php if(docente_sobreposta($conn,$aula['id_aula']) or turma_sobreposta($conn,$aula['id_aula']) or !$id_docente or erro_pref_visual($conn,$idAula)) echo "style='background: hsl(2, 35%, 33%);'"; ?>
     <?php if(sala_sobreposta($conn,$aula['id_aula']) or !$id_sala) echo "style='background: hsl(60, 55%, 53%);'"; ?>
@@ -517,6 +525,7 @@ $pref = $preferencias[$idx] ?? 0;
                                 data-id_horario="<?= $id_horario ?>" 
                                 data-pref="<?= $pref ?>"
                                 style="background-color:<?= $cores[$pref] ?>;">
+                                <?= $id_horario ?>
                             </td>
                     <?php }} ?>
                 </tr>
@@ -524,4 +533,5 @@ $pref = $preferencias[$idx] ?? 0;
         </tbody>
     </table>
 <?php } ?>
+
 
