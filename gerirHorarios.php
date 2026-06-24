@@ -247,8 +247,9 @@ Erros encontrados: <?=$GLOBALS["n_erros"]?>
 
         <!--mostrar salas-->
         <div id="caixa_salas" style="display:none;" >
-            <form method="post" style="width:300px; " class="docentes">
+            <form method="post" style="width:300px; " class="salas">
                   <summary>Escolha a sala</summary>
+                <button type="button" id="fechar_salas" onclick="$('#caixa_salas').hide()">X</button>
                 <div id="conteudo_salas" class="dropdown-content" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
                 </div>
                     <input type="submit" value="Submit">

@@ -20,6 +20,10 @@ $(".ocupado").draggable({
 
     start: function () {
 
+        if (!$(this).data("id_docente")) {
+                return false;
+        }
+
             //isto está a dar erro
         let horasAmarelas = $(this).attr("data-horas_amarelas");
         // converter string para array
@@ -140,25 +144,6 @@ function atualizarHorario(data) {
         location.reload();
     });
 }
-
-// function atribuirAula(id_aula, id_horario) {
-//     if (!id_horario) {
-//         // alert("Hora não disponivel");
-//         return;
-//     }
-//     var id_aula = prompt("ID do aula a atribuir?");
-//     if (!id_aula) return;
-//     var xhr = new XMLHttpRequest();
-//     xhr.open("POST", "atualizarHorarioTESTE.php");
-//     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-//     xhr.onload = function() {
-//         alert(xhr.responseText);
-//         location.reload();
-//     };
-//     xhr.send("&id_aula=" + encodeURIComponent(id_aula) +
-//         "&id_juncao=" + encodeURIComponent(id_juncao) +
-//         "&id_horario=" + encodeURIComponent(id_horario));
-// }
 
 let text = "";
 function atribuir_sala(id_aula,salas){

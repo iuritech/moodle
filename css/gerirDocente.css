@@ -47,7 +47,7 @@ select:focus {
 }
 
 .panel {
-    width:800px;
+    width: 800px;
 }
 
 .ui-draggable-dragging {
@@ -88,36 +88,93 @@ select:focus {
 .disciplina-draggable:hover {
     background: #d4edff;
 }
-.slot-impossivel { background-color: #bdbdbd !important; }
-.slot-mau { background-color: #ffcccc !important; }
-.slot-bom { background-color: #ffff99 !important; }
-.slot-otimo { background-color: #b2ffb2 !important; }
 
-<!--Estilo para mostrar doentes -->
-details {
-  width: 250px;
+.slot-impossivel {
+    background-color: #bdbdbd !important;
 }
+
+.slot-mau {
+    background-color: #ffcccc !important;
+}
+
+.slot-bom {
+    background-color: #ffff99 !important;
+}
+
+.slot-otimo {
+    background-color: #b2ffb2 !important;
+}
+
+< !--Estilo para mostrar doentes -->details {
+    width: 250px;
+}
+
 .dropdown-content {
-  border: 1px solid #ccc;
-  padding: 10px;
-  max-height: 150px;
-  overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 150px;
+    overflow-y: auto;
 }
+
 .docentes {
-  align-items: center;     /* vertical */
-  background-color:gray;
-  display: flex;
-  justify-content: center; /* horizontal */
-  padding: 2%;
-  border-radius:25px;
+    align-items: center;
+    /* vertical */
+    background-color: gray;
+    display: flex;
+    justify-content: center;
+    /* horizontal */
+    padding: 2%;
+    border-radius: 25px;
 }
 
-.caixas{
-  align-items:center;
-  margin:20px;
-  min-width:800px;
-  min-height: 600px;
-  justify-content: center;
+.salas {
+    align-items: center;
+    background-color: gray;
+    justify-content: center;
+    padding: 1%;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 25px;
+    width: auto;
+
 }
 
+#fechar_salas {
+    position: absolute;
+    top: 8px;
+    right: 8px;
 
+    width: 30px;
+    height: 30px;
+
+    border: none;
+    border-radius: 50%;
+    background: #e74c3c;
+    color: white;
+
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 30px;
+    text-align: center;
+
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+#fechar_salas:hover {
+    background: #c0392b;
+}
+
+#fechar_salas:active {
+    transform: scale(0.95);
+}
+
+.caixas {
+    align-items: center;
+    margin: 20px;
+    min-width: 800px;
+    min-height: 600px;
+    justify-content: center;
+}

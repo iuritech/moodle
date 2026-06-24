@@ -1,8 +1,13 @@
 <html>
 <body>
-<h2>Pagina de falhas</h2>
-<?php
 
+        <!--feito-->
+        <!--visualização de movimentos validos, invalidos, e semivalidos-->
+        <!--validação das preferencias para movimentos invalidos-->
+        <!--escolha das salas, ja está centrado e com botao para fechar-->
+
+
+<?php
 $n_erros = 0;
 function sobrepostos($conn){
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,c.numero_horas,u.nome as nome_docente,t.nome as nome_turma,d.nome_uc,a.id_turma, h.hora_inicio, h.dia_semana
@@ -598,7 +603,6 @@ function preferencias($conn,$id_horario,$id_aula){
     }
     return false;
 }
-
 ?>
 </body>
 </html>
