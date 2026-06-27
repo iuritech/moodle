@@ -18,49 +18,41 @@ $(".ocupado").draggable({
     appendTo: "body",
 
 
-    start: function () {
+        start: function () {
 
-        if (!$(this).data("id_docente")) {
-                return false;
-        }
+    let painel = $(this).closest(".panel");
 
-            //isto está a dar erro
-        let horasAmarelas = $(this).attr("data-horas_amarelas");
-        // converter string para array
-        if (horasAmarelas){
-            horasAmarelas = JSON.parse(
-                horasAmarelas.replace(/'/g, '"')
-            );
-            // altera apenas as células disponíveis
-            horasAmarelas.forEach(function(idHorario) {
-                $(".disponivel[data-id_horario='" + idHorario + "']")
-                    .addClass("horas-amarelas");
-            });
-        }
+    painel.find(".disponivel").addClass("horas-verdes");
 
-        let horasInvalidas = $(this).attr("data-horas_invalidas");
-        if (horasInvalidas ){
-            // converter string para array
-            horasInvalidas = JSON.parse(
-                horasInvalidas.replace(/'/g, '"')
-            );
-            // altera apenas as células disponíveis
-            horasInvalidas.forEach(function(idHorario) {
-                $(".disponivel[data-id_horario='" + idHorario + "']")
-                    .addClass("horas-invalidas");
-            });
-        }
+    let horasAmarelas = $(this).attr("data-horas_amarelas");
+    if (horasAmarelas) {
+        horasAmarelas = JSON.parse(horasAmarelas.replace(/'/g, '"'));
 
-        $(".disponivel").addClass("horas-verdes");
-
-    },
-
-    stop: function () {
-        $(".disponivel").removeClass("horas-amarelas");
-        $(".disponivel").removeClass("horas-invalidas");
-        $(".disponivel").removeClass("horas-verdes");
-
+        horasAmarelas.forEach(function(idHorario) {
+            painel.find(".disponivel[data-id_horario='" + idHorario + "']")
+                  .addClass("horas-amarelas");
+        });
     }
+
+    let horasInvalidas = $(this).attr("data-horas_invalidas");
+    if (horasInvalidas) {
+        horasInvalidas = JSON.parse(horasInvalidas.replace(/'/g, '"'));
+
+        horasInvalidas.forEach(function(idHorario) {
+            painel.find(".disponivel[data-id_horario='" + idHorario + "']")
+                  .addClass("horas-invalidas");
+        });
+    }
+},
+
+stop: function () {
+
+    let painel = $(this).closest(".panel");
+
+    painel.find(".disponivel").removeClass("horas-amarelas");
+    painel.find(".disponivel").removeClass("horas-invalidas");
+    painel.find(".disponivel").removeClass("horas-verdes");
+}
 
 });
 

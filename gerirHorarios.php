@@ -33,12 +33,9 @@ function salas_componente($conn,$idAula){
         $salas=runQuery($conn,$sql);
         // se uma componente nao tiver salas atribuidas mostra as salas todas
         if(!$salas){
-            $sql="
-            select s.id_sala, s.sigla_sala
-            from sala s";
-            $salas=runQuery($conn,$sql);
-        }
-        $salas_str="[";
+    return "['sem salas atribuidas']";
+    }
+                    $salas_str="[";
         foreach ($salas as $s){
             $salas_str=$salas_str."'".$s['sigla_sala']."', ";
         }
@@ -307,9 +304,9 @@ if (!empty($id_salas))
         <div class="caixas" style="display:flex;">
                     <div class="panel" id="sala_<?=$id_sala?>" data-id_sala="<?= $id_sala ?>">
                         <h3 style="margin-left:15px;">Horário de <?= htmlspecialchars($nome_sala) ?></h3>
-            <?= imprime_horario($conn,$aulas,$preferencias); ?>
                     </div>
         </div>
+        <?php $id_tabela= $id_tabela +1; ?>
 <?php } ?>
 
 <div class="caixas" style="display:flex;">

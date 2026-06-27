@@ -1,11 +1,12 @@
 <html>
 <body>
 
-        <!--feito-->
-        <!--visualização de movimentos validos, invalidos, e semivalidos-->
-        <!--validação das preferencias para movimentos invalidos-->
-        <!--escolha das salas, ja está centrado e com botao para fechar-->
+        <!--atribuir salas -->
+        <!--no atribuir salas adicionar a sigla das salas atribuidas a cada aula-->
 
+            <!--feito-->
+        <!--colocar "sem salas atribuidas"-->
+        <!--slots validos so deve mudar no horario que esta a mecher-->
 
 <?php
 $n_erros = 0;
