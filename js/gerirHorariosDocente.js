@@ -18,7 +18,11 @@ $(".ocupado").draggable({
     appendTo: "body",
 
 
-        start: function () {
+start: function () {
+
+    if (!$(this).data("id_docente")) {
+            return false;
+    }
 
     let painel = $(this).closest(".panel");
 

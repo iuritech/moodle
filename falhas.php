@@ -3,10 +3,8 @@
 
         <!--atribuir salas -->
         <!--no atribuir salas adicionar a sigla das salas atribuidas a cada aula-->
-
-            <!--feito-->
-        <!--colocar "sem salas atribuidas"-->
-        <!--slots validos so deve mudar no horario que esta a mecher-->
+        <!--retirar turmas-->
+        <!--verificar query  porque só aparece uma componente de uma determinada disciplina-->
 
 <?php
 $n_erros = 0;

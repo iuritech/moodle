@@ -702,4 +702,28 @@ function atualizarAnoLetivo(ano_atual){
 </script>
     <?php
 }
+function get_salas_to_string($conn, $id_componente)
+{
+    $sql = "
+        SELECT s.sigla_sala
+        FROM sala_componente_disponivel scd
+        JOIN sala s ON s.id_sala = scd.id_sala
+        WHERE scd.id_componente = ?
+        ORDER BY s.sigla_sala
+    ";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    $stmt->bind_param("i", $id_componente);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+
+    $salas = [];
+
+    while ($linha = mysqli_fetch_assoc($resultado)) {
+        $salas[] = $linha['sigla_sala'];
+    }
+
+    return implode(", ", $salas);
+}
+
 ?>

@@ -81,19 +81,19 @@ if (!empty($linha["id_area"])) {
                         <th>Ano</th>
                         <th>Disciplina</th>
                         <th>ID Disciplina</th>
-                        <th>Turma</th>
+                        <th>Salas</th>
                         <th>Tipo</th>
                         <th>Salas</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php
+
                     $query = "
                     SELECT 
                     d.id_disciplina,
                     d.nome_uc AS disciplina,
                     tc.nome_tipocomponente AS tipo,
-                    t.nome AS turma,
                     c.id_componente,
                     cur.nome AS curso,
                     d.ano AS ano,
@@ -102,11 +102,11 @@ if (!empty($linha["id_area"])) {
                     FROM componente c
                     JOIN disciplina d ON c.id_disciplina = d.id_disciplina
                     JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
-                    JOIN aula a ON c.id_componente = a.id_componente
-                    JOIN turma t ON a.id_turma = t.id_turma
                     JOIN curso cur ON d.id_curso = cur.id_curso
                     LEFT JOIN sala_componente_disponivel sca ON c.id_componente = sca.id_componente
-                    LEFT JOIN sala s ON sca.id_sala = s.id_sala;";
+                    LEFT JOIN sala s ON sca.id_sala = s.id_sala
+                    group by id_componente
+                    ";
 
                     $statement = mysqli_prepare($conn, $query);
 
@@ -121,7 +121,7 @@ if (!empty($linha["id_area"])) {
                                 <td><?php echo htmlspecialchars($linha['ano']); ?></td>
                                 <td><?php echo htmlspecialchars($linha['disciplina']); ?></td>
                                 <td><?php echo htmlspecialchars($linha['id_disciplina']); ?></td>
-                                <td><?php echo htmlspecialchars($linha['turma']); ?></td>
+                            <td><?= htmlspecialchars(get_salas_to_string($conn, $linha['id_componente'])) ?></td>
                                 <td><?php echo htmlspecialchars($linha['tipo']); ?></td>
                                 <td><button class="btn btn-primary btn-edit-sala" data-id_componente="<?php echo htmlspecialchars($linha['id_componente']); ?>"
                                         title="Editar Sala"><i class='material-icons' style='width:15px; height:15px; line-height:13px; float:left;'>edit_note</i>
@@ -182,13 +182,15 @@ if (!empty($linha["id_area"])) {
 
                 <script>
                     $(document).ready(function() {
-                        const idComponente = $(this).data('id_componente');
 
                         $('.btn-edit-sala').on('click', function() {
-                            const idComponente = $(this).closest('tr').find('td:nth-child(4)').text().trim(); // procura o ID no TD correto
-                            $('#componenteSelecionado').val(idComponente); // Define o valor no campo oculto do modal
-                            carregarSalasDisponiveis(idComponente);
-                            $('#editarSalaModal').modal('show'); // Exibe o modal
+                             const idComponente = $(this).data('id_componente');
+
+        $('#componenteSelecionado').val(idComponente);
+
+        carregarSalasDisponiveis(idComponente);
+
+        $('#editarSalaModal').modal('show');
                         });
 
                     });
@@ -262,7 +264,7 @@ if (!empty($linha["id_area"])) {
 
                         // Envia os dados via AJAX
                         $.ajax({
-                            url: 'atualizasalas.php',
+                            url: 'atualizaSalas.php',
                             method: 'POST',
                             data: {
                                 salas: salasSelecionadasAtuais,
