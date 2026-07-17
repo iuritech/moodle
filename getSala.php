@@ -8,7 +8,9 @@ if (isset($_GET['id_componente'])) {
     $query = "SELECT s.id_sala, s.sigla_sala, 
                      CASE WHEN sca.id_sala IS NOT NULL THEN 1 ELSE 0 END AS atribuida
               FROM sala s
-              LEFT JOIN sala_componente_disponivel sca ON s.id_sala = sca.id_sala AND sca.id_componente = ?";
+    LEFT JOIN sala_componente_disponivel sca ON s.id_sala = sca.id_sala AND sca.id_componente = ?
+    order by s.sigla_sala";
+                
 
     if ($stmt = mysqli_prepare($conn, $query)) {
         $stmt->bind_param('i', $idComponente);

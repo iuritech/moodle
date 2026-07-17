@@ -1,6 +1,10 @@
 <?php
 // Página de visualização das atribuições das salas (Atribuição)
 
+    /* feito */
+    /*atualizar o campo salas quando houver alteração*/
+    /* detectei um erro que quando não havia preferencias impossiveis a pesquisa + o numero de horas ultropassava o id_preferencia na matriz preferencia */
+
 session_start();
 
 if (!isset($_SESSION["sessao"])) {
@@ -80,10 +84,9 @@ if (!empty($linha["id_area"])) {
                         <th>Curso</th>
                         <th>Ano</th>
                         <th>Disciplina</th>
-                        <th>ID Disciplina</th>
-                        <th>Salas</th>
                         <th>Tipo</th>
                         <th>Salas</th>
+                        <th>Editar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -120,9 +123,11 @@ if (!empty($linha["id_area"])) {
                                 <td><?php echo htmlspecialchars($linha['curso']); ?></td>
                                 <td><?php echo htmlspecialchars($linha['ano']); ?></td>
                                 <td><?php echo htmlspecialchars($linha['disciplina']); ?></td>
-                                <td><?php echo htmlspecialchars($linha['id_disciplina']); ?></td>
-                            <td><?= htmlspecialchars(get_salas_to_string($conn, $linha['id_componente'])) ?></td>
                                 <td><?php echo htmlspecialchars($linha['tipo']); ?></td>
+                                <td class="coluna-salas"
+                                    data-id_componente="<?= $linha['id_componente'] ?>">
+                                    <?= htmlspecialchars(get_salas_to_string($conn, $linha['id_componente'])) ?>
+                                </td>
                                 <td><button class="btn btn-primary btn-edit-sala" data-id_componente="<?php echo htmlspecialchars($linha['id_componente']); ?>"
                                         title="Editar Sala"><i class='material-icons' style='width:15px; height:15px; line-height:13px; float:left;'>edit_note</i>
                                     </button></td>
@@ -195,6 +200,14 @@ if (!empty($linha["id_area"])) {
 
                     });
 
+function atualizarTextoSalas(idComponente) {
+    $.get('getSalasToString.php', {
+        id_componente: idComponente
+    }, function(texto) {
+        $('.coluna-salas[data-id_componente="' + idComponente + '"]').text(texto);
+    });
+}
+
                     let salasSelecionadasAntes = [];
                     // Ao abrir o modal, carregue as salas já atribuídas
                     $('.btn-edit-sala').on('click', function() {
@@ -247,6 +260,7 @@ if (!empty($linha["id_area"])) {
                         });
                     }
 
+
                     function salvarSala() {
                         const salasSelecionadasAtuais = [];
                         const componenteSelecionado = $('#componenteSelecionado').val();
@@ -274,7 +288,7 @@ if (!empty($linha["id_area"])) {
                                 try {
                                     const result = JSON.parse(response);
                                     if (result.success) {
-                                        alert(result.message);
+                                        atualizarTextoSalas(componenteSelecionado);
                                         $('#editarSalaModal').modal('hide');
                                     } else {
                                         alert(result.message);

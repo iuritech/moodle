@@ -249,7 +249,7 @@ Erros encontrados: <?=$GLOBALS["n_erros"]?>
                 <button type="button" id="fechar_salas" onclick="$('#caixa_salas').hide()">X</button>
                 <div id="conteudo_salas" class="dropdown-content" style="border:1px solid #ccc; padding:10px; margin-top:10px;">
                 </div>
-                    <input type="submit" value="Submit">
+                    <input type="submit" value="Confirmar">
             </form>
         </div>
 

@@ -1,11 +1,6 @@
 <html>
 <body>
 
-        <!--atribuir salas -->
-        <!--no atribuir salas adicionar a sigla das salas atribuidas a cada aula-->
-        <!--retirar turmas-->
-        <!--verificar query  porque só aparece uma componente de uma determinada disciplina-->
-
 <?php
 $n_erros = 0;
 function sobrepostos($conn){
@@ -586,7 +581,7 @@ function preferencias($conn,$id_horario,$id_aula){
         $pref_tur[$t] = getPref($conn,$t,'preferencias_turma','id_turma');
     }
     // Verificar todos os slots que a aula iria ocupar
-    for($h = $id_horario; $h < $id_horario + $n_horas; $h++){
+    for($h = $id_horario; $h < $id_horario + $n_horas and $h < 293; $h++){
         $i = $matriz[$h];
         // Docente
         if ($docente && $pref_doc[$i] == 0)
