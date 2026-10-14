@@ -4,6 +4,7 @@
 <?php
 $n_erros = 0;
 function sobrepostos($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,c.numero_horas,u.nome as nome_docente,t.nome as nome_turma,d.nome_uc,a.id_turma, h.hora_inicio, h.dia_semana
         from aula a 
         join componente c on a.id_componente = c.id_componente 
@@ -11,6 +12,7 @@ function sobrepostos($conn){
         join utilizador u on u.id_utilizador = a.id_docente
         join horario h on h.id_horario = a.id_horario
         join turma t on t.id_turma = a.id_turma
+        where d.semestre = $semestre
 ";
     $aulas = runQuery($conn,$sql);
     if ($aulas)
@@ -38,18 +40,21 @@ function sobrepostos($conn){
 }
 
 function pesquia_aula($conn,$id_aula){
+    $semestre = $GLOBALS["semestre"];
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,c.numero_horas,t.nome as nome_turma,d.nome_uc,a.id_turma 
         from aula a 
         join componente c on a.id_componente = c.id_componente 
         join disciplina d ON c.id_disciplina = d.id_disciplina
         join turma t on t.id_turma = a.id_turma
         where id_aula = $id_aula
+        and d.semestre = $semestre
 ";
     $aula = runQuery($conn,$sql);
     return $aula[0];
 };
 
 function docente_sobreposta($conn,$id_aula){
+    $semestre = $GLOBALS["semestre"];
     $aula = pesquia_aula($conn,$id_aula);
     $id = $aula["id_aula"];
     $horario = $aula["id_horario"];
@@ -62,13 +67,17 @@ function docente_sobreposta($conn,$id_aula){
             $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao from aula a
             join utilizador u on u.id_utilizador = a.id_docente
             join turma t on t.id_turma = a.id_turma
-            where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente and id_juncao <> $juncao
-            or id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente and id_juncao is null ";
+            join componente c on a.id_componente = c.id_componente 
+            join disciplina d ON c.id_disciplina = d.id_disciplina
+            where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente and id_juncao <> $juncao and d.semestre=$semestre
+            or id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente and id_juncao is null and d.semestre=$semestre";
         else
             $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao from aula a
             join utilizador u on u.id_utilizador = a.id_docente
             join turma t on t.id_turma = a.id_turma
-            where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente ";
+            join componente c on a.id_componente = c.id_componente 
+            join disciplina d ON c.id_disciplina = d.id_disciplina
+            where id_horario between $horario and $Hfim and id_aula <> $id and id_docente = $docente  and d.semestre=$semestre";
         $sobrepostas = runQuery($conn,$sql);
         if ($sobrepostas){
             return $sobrepostas;
@@ -78,6 +87,7 @@ function docente_sobreposta($conn,$id_aula){
 };
 
 function sala_sobreposta($conn,$id_aula){
+    $semestre = $GLOBALS["semestre"];
     $aula = pesquia_aula($conn,$id_aula);
     $id = $aula["id_aula"];
     $horario = $aula["id_horario"];
@@ -90,15 +100,19 @@ function sala_sobreposta($conn,$id_aula){
             $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao, s.sigla_sala from aula a
             join utilizador u on u.id_utilizador = a.id_docente
             join turma t on t.id_turma = a.id_turma
-        join sala s on s.id_sala = a.id_sala
-            where id_horario between $horario and $Hfim and id_aula <> $id and a.id_sala = $sala and id_juncao <> $juncao
-            or id_horario between $horario and $Hfim and id_aula <> $id and a.id_sala = $sala and id_juncao is null ";
+            join sala s on s.id_sala = a.id_sala
+            join componente c on a.id_componente = c.id_componente 
+            join disciplina d ON c.id_disciplina = d.id_disciplina
+            where id_horario between $horario and $Hfim and id_aula <> $id and a.id_sala = $sala and id_juncao <> $juncao and d.semestre =$semestre
+            or id_horario between $horario and $Hfim and id_aula <> $id and a.id_sala = $sala and id_juncao is null and d.semestre=$semestre";
     else
         $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao, s.sigla_sala from aula a
         join utilizador u on u.id_utilizador = a.id_docente
         join turma t on t.id_turma = a.id_turma
         join sala s on s.id_sala = a.id_sala
-        where id_horario between $horario and $Hfim and id_aula <> $id and a.id_sala = $sala ";
+        join componente c on a.id_componente = c.id_componente 
+        join disciplina d ON c.id_disciplina = d.id_disciplina
+        where id_horario between $horario and $Hfim and id_aula <> $id and a.id_sala = $sala and d.semestre=$semestre";
         $sobrepostas = runQuery($conn,$sql);
         if ($sobrepostas){
             return $sobrepostas;
@@ -109,6 +123,7 @@ function sala_sobreposta($conn,$id_aula){
 };
 
 function turma_sobreposta($conn,$id_aula){
+    $semestre = $GLOBALS["semestre"];
     $aula = pesquia_aula($conn,$id_aula);
     $id = $aula["id_aula"];
     $horario = $aula["id_horario"];
@@ -118,7 +133,9 @@ function turma_sobreposta($conn,$id_aula){
     $sql="select a.id_horario, u.nome as nome_docente, t.nome as nome_turma, a.id_juncao from aula a
         join utilizador u on u.id_utilizador = a.id_docente
         join turma t on t.id_turma = a.id_turma
-        where id_horario between $horario and $Hfim and id_aula <> $id and a.id_turma = $turma ";
+        join componente c on a.id_componente = c.id_componente 
+        join disciplina d ON c.id_disciplina = d.id_disciplina
+        where id_horario between $horario and $Hfim and id_aula <> $id and a.id_turma = $turma and d.semestre=$semestre";
     $sobrepostas = runQuery($conn,$sql);
     if ($sobrepostas){
         return $sobrepostas;
@@ -128,6 +145,7 @@ function turma_sobreposta($conn,$id_aula){
 };
 
 function docente_max_horas($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql = "select * from utilizador";
     $docentes = runQuery($conn,$sql);
     foreach ($docentes as $docente){
@@ -137,7 +155,8 @@ function docente_max_horas($conn){
             from (select id_aula, a.id_docente, dia_semana, numero_horas from aula a
             join horario h on h.id_horario = a.id_horario
             join componente c on a.id_componente = c.id_componente 
-            where a.id_docente = $id
+            join disciplina d ON c.id_disciplina = d.id_disciplina
+            where a.id_docente = $id and d.semestre=$semestre
             GROUP BY COALESCE(id_juncao, id_aula)
         ) as t
         group by dia_semana";
@@ -152,6 +171,7 @@ function docente_max_horas($conn){
 }
 
 function turma_max_horas($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql = "select * from turma";
     $turmas = runQuery($conn,$sql);
     foreach ($turmas as $turma){
@@ -161,7 +181,8 @@ function turma_max_horas($conn){
             from (select id_aula, a.id_turma, dia_semana, numero_horas from aula a
             join horario h on h.id_horario = a.id_horario
             join componente c on a.id_componente = c.id_componente 
-            where a.id_turma = $id
+            join disciplina d ON c.id_disciplina = d.id_disciplina
+            where a.id_turma = $id and d.semestre=$semestre
         ) as t
         group by dia_semana";
         $aulas_dia = runQuery($conn,$sql);
@@ -175,12 +196,13 @@ function turma_max_horas($conn){
 }
 
 function aulas_sem_sala($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,t.nome as nome_turma,d.nome_uc,a.id_turma 
         from aula a 
         join componente c on a.id_componente = c.id_componente 
         join disciplina d ON c.id_disciplina = d.id_disciplina
         join turma t on t.id_turma = a.id_turma
-        where a.id_sala is null
+        where a.id_sala is null and d.semestre=$semestre
 ";
     $aulas= runQuery($conn,$sql);
     if($aulas)
@@ -195,12 +217,13 @@ function aulas_sem_sala($conn){
 
 
 function aula_sem_docente($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,t.nome as nome_turma,d.nome_uc,a.id_turma 
         from aula a 
         join componente c on a.id_componente = c.id_componente 
         join disciplina d ON c.id_disciplina = d.id_disciplina
         join turma t on t.id_turma = a.id_turma
-        where a.id_docente is null
+        where a.id_docente is null and d.semestre=$semestre
 ";
     $aulas= runQuery($conn,$sql);
     if($aulas)
@@ -215,12 +238,13 @@ function aula_sem_docente($conn){
 
 
 function aula_sem_horario($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql="select a.id_aula,a.id_horario,a.id_juncao,a.id_docente,a.id_sala,t.nome as nome_turma,d.nome_uc,a.id_turma 
         from aula a 
         join componente c on a.id_componente = c.id_componente 
         join disciplina d ON c.id_disciplina = d.id_disciplina
         join turma t on t.id_turma = a.id_turma
-        where a.id_horario = 0
+        where a.id_horario = 0 and d.semestre=$semestre
 ";
     $aulas= runQuery($conn,$sql);
     if($aulas)
@@ -267,6 +291,7 @@ function uma_h_ocupado($aulas){
 
 
 function docente_sem_almoco($conn){
+    $semestre = $GLOBALS["semestre"];
     $docentes= runQuery($conn,"select * from utilizador");
     $dias_semana= ["SEG","TER","QUA","QUI","SEX"]; 
     foreach($docentes as $docente)
@@ -276,8 +301,10 @@ function docente_sem_almoco($conn){
             $sql ="select * from aula a 
                 join horario h on h.id_horario = a.id_horario 
                 join componente c on a.id_componente = c.id_componente 
+                join disciplina d ON c.id_disciplina = d.id_disciplina
                 where hora_inicio between '09:30:00' and '13:30:00' 
                 and id_docente= $id 
+                and d.semestre=$semestre
                 and dia_semana = '$dia_s'";
             $aulas = runQuery($conn,$sql);
             if ($aulas)
@@ -290,6 +317,7 @@ function docente_sem_almoco($conn){
 }
 
 function turma_sem_almoco($conn){
+    $semestre = $GLOBALS["semestre"];
     $turma= runQuery($conn,"select * from turma");
     $dias_semana= ["SEG","TER","QUA","QUI","SEX"]; 
     foreach($turma as $turma)
@@ -299,8 +327,10 @@ function turma_sem_almoco($conn){
             $sql ="select * from aula a 
                 join horario h on h.id_horario = a.id_horario 
                 join componente c on a.id_componente = c.id_componente 
+                join disciplina d ON c.id_disciplina = d.id_disciplina
                 where hora_inicio between '09:30:00' and '13:30:00' 
                 and id_turma= $id 
+                and d.semestre=$semestre
                 and dia_semana = '$dia_s'";
             $aulas = runQuery($conn,$sql);
             if ($aulas)
@@ -324,6 +354,7 @@ function matriz_preferencias($conn){
 }
 
 function erro_pref_docente($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql = "select * from utilizador;";
     $docentes = runQuery($conn,$sql);
     $atributo = "id_utilizador";
@@ -335,7 +366,7 @@ function erro_pref_docente($conn){
             join utilizador u on u.id_utilizador = a.id_docente
             join componente c on c.id_componente = a.id_componente
             join disciplina d on d.id_disciplina = c.id_disciplina
-            where id_docente =$id
+            where id_docente =$id and d.semestre=$semestre
             GROUP BY COALESCE(id_juncao, id_aula)
 ";
         $aulas = runQuery($conn,$sql);
@@ -352,6 +383,7 @@ function erro_pref_docente($conn){
 
 
 function erro_pref_sala($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql = "select * from sala;";
     $salas = runQuery($conn,$sql);
     $atributo = "id_sala";
@@ -363,7 +395,7 @@ function erro_pref_sala($conn){
             join sala s on s.id_sala = a.id_sala
             join componente c on c.id_componente = a.id_componente
             join disciplina d on d.id_disciplina = c.id_disciplina
-            where a.id_sala =$id
+            where a.id_sala =$id and d.semestre=$semestre
             GROUP BY COALESCE(id_juncao, id_aula)
 ";
         $aulas = runQuery($conn,$sql);
@@ -379,6 +411,7 @@ function erro_pref_sala($conn){
 }
 
 function erro_pref_turma($conn){
+    $semestre = $GLOBALS["semestre"];
     $sql = "select * from turma;";
     $turmas = runQuery($conn,$sql);
     $atributo = "id_turma";
@@ -389,7 +422,7 @@ function erro_pref_turma($conn){
             from aula a
             join componente c on c.id_componente = a.id_componente
             join disciplina d on d.id_disciplina = c.id_disciplina
-            where id_turma =$id
+            where id_turma =$id and d.semestre=$semestre
 ";
         $aulas = runQuery($conn,$sql);
         if ($aulas)
@@ -465,6 +498,7 @@ function slots_amarelos($conn,$id_aula){
         return json_encode($horas_invalidas);
 }
 function slot_amarelo($conn,$id_horario,$id_aula){
+    $semestre = $GLOBALS["semestre"];
     $aula = pesquia_aula($conn,$id_aula);
     $n_horas = $aula["numero_horas"];
     $sala = $aula["id_sala"];
@@ -477,6 +511,7 @@ function slot_amarelo($conn,$id_horario,$id_aula){
         select *
         from aula a
         join componente c on a.id_componente = c.id_componente
+        join disciplina d on d.id_disciplina = c.id_disciplina
         where $exclude
         and (
             $id_horario between a.id_horario
@@ -485,7 +520,7 @@ function slot_amarelo($conn,$id_horario,$id_aula){
             a.id_horario between $id_horario
             and ($id_horario + $n_horas - 1)
         )
-        and a.id_sala = $sala
+        and a.id_sala = $sala and d.semestre=$semestre
         
     ";
     $sobreposta = runQuery($conn,$sql);
@@ -503,6 +538,7 @@ function slots_vermelhos($conn,$id_aula){
 }
 
 function slot_vermelho($conn,$id_horario,$id_aula){
+    $semestre = $GLOBALS["semestre"];
     $aula = pesquia_aula($conn,$id_aula);
     $n_horas = $aula["numero_horas"];
     $docente = $aula["id_docente"];
@@ -534,6 +570,7 @@ function slot_vermelho($conn,$id_horario,$id_aula){
         select *
         from aula a
         join componente c on a.id_componente = c.id_componente
+        join disciplina d on d.id_disciplina = c.id_disciplina
         where $exclude
         and (
             $id_horario between a.id_horario
@@ -546,6 +583,7 @@ function slot_vermelho($conn,$id_horario,$id_aula){
             a.id_docente = $docente
             or a.id_turma in ($turmas_sql)
         )
+        and d.semestre=$semestre
     ";
     $sobreposta = runQuery($conn,$sql);
     return !empty($sobreposta);
@@ -573,6 +611,10 @@ function preferencias($conn,$id_horario,$id_aula){
     } else {
         $turmas[] = $turma;
     }
+    $maximo_horario = runQuery($conn,"select max(id_horario) as id from horario");
+    $max_horario = $maximo_horario[0]["id"];
+
+
     // Preferências (buscar apenas uma vez)
     $pref_doc = getPref($conn,$docente,'utilizador_preferencia','id_utilizador');
     $pref_sal = getPref($conn,$sala,'preferencia_sala','id_sala');
@@ -581,7 +623,7 @@ function preferencias($conn,$id_horario,$id_aula){
         $pref_tur[$t] = getPref($conn,$t,'preferencias_turma','id_turma');
     }
     // Verificar todos os slots que a aula iria ocupar
-    for($h = $id_horario; $h < $id_horario + $n_horas and $h < 293; $h++){
+    for($h = $id_horario; $h < $id_horario + $n_horas and $h < $max_horario; $h++){
         $i = $matriz[$h];
         // Docente
         if ($docente && $pref_doc[$i] == 0)

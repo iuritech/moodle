@@ -1,9 +1,6 @@
 <?php
 // Página de visualização das atribuições das salas (Atribuição)
 
-    /* feito */
-    /*atualizar o campo salas quando houver alteração*/
-    /* detectei um erro que quando não havia preferencias impossiveis a pesquisa + o numero de horas ultropassava o id_preferencia na matriz preferencia */
 
 session_start();
 

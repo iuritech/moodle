@@ -5,8 +5,6 @@ include('bd.h');
 include('bd_final.php');
 include('falhas.php');
 
-/* validar sobrepostos e preferencias impossiveis */
-/* adicionar array nas aulas com os id_horario de movimentos validos */
 
 estaLogado();
 
@@ -97,12 +95,14 @@ function selecionado($id, $id_gets){
 
 /* Lista lateral de disciplinas */
 function imprime_lista_lateral($conn,$id,$atributo){
+    $semestre = $GLOBALS["semestre"];
  $sql = "SELECT a.id_aula, c.id_componente, d.nome_uc, tc.nome_tipocomponente, a.id_juncao
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
         JOIN disciplina d ON c.id_disciplina = d.id_disciplina
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         WHERE a.$atributo = $id and a.id_horario =0
+        and d.semestre = $semestre
         GROUP BY COALESCE(id_juncao, id_aula);
 ";?>
         <details>
@@ -172,9 +172,10 @@ $id_salas = array_filter($id_salas, 'is_numeric'); // Sao ids validos
 
 // Obter semestre (opcional)
 $semestre = isset($_GET['semestre']) ? intval($_GET['semestre']) : 1;
-
+print ($semestre);
 // Obter aulas 
 function get_aulas($conn,$atributo,$id){
+    $semestre = $GLOBALS["semestre"];
     $sql = "SELECT a.id_horario, a.id_componente, d.abreviacao_uc, tc.sigla_tipocomponente, h.hora_inicio, h.hora_fim, h.dia_semana, c.numero_horas, a.id_aula, a.id_juncao, a.id_sala, a.id_docente, t.nome
         FROM aula a
         JOIN componente c ON a.id_componente = c.id_componente
@@ -182,7 +183,8 @@ function get_aulas($conn,$atributo,$id){
         JOIN tipo_componente tc ON c.id_tipocomponente = tc.id_tipocomponente
         JOIN horario h ON a.id_horario = h.id_horario
         join turma t on a.id_turma=t.id_turma
-        WHERE a.$atributo = $id";
+        WHERE a.$atributo = $id 
+        and d.semestre = $semestre";
     $res = $conn->query($sql);
     $aulas = [];
     while ($row = $res->fetch_assoc()) {
@@ -312,7 +314,7 @@ if (!empty($id_salas))
 <div class="caixas" style="display:flex;">
     <form method="get" class="docentes">
         <details>
-        <summary>Adicionar tabela</summary>
+        <summary>Tabelas</summary>
             <div style="display: flex; flex-wrap: wrap;">
                 <div style"display:flex" class="dropdown-content">
                     <?php foreach ($docentes as $d){ ?>
@@ -340,7 +342,7 @@ if (!empty($id_salas))
             <label for="sem1">Semestre 1</label><br>
             <input type="radio" id="sem2" name="semestre" value="2">
             <label for="sem2">Semestre 2</label><br>
-            <input type="submit" value="Submit">
+            <input type="submit" value="Confirmar">
         </details>
     </form>
 </div>
@@ -523,7 +525,6 @@ $pref = $preferencias[$idx] ?? 0;
                                 data-id_horario="<?= $id_horario ?>" 
                                 data-pref="<?= $pref ?>"
                                 style="background-color:<?= $cores[$pref] ?>;">
-                                <?= $id_horario ?>
                             </td>
                     <?php }} ?>
                 </tr>

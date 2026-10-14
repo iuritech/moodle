@@ -61,7 +61,7 @@ $docentes = $result->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div><?php
         foreach($docentes as $docente) {
-            echo"<h3>{$docente['nome']}</h3>"
+            echo"<h3>{$docente['nome']}</h3>";
             $stmt = " 
                     SELECT d.nome_uc 
                     FROM disciplina d 
